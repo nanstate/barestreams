@@ -71,18 +71,22 @@ export const scrapeEztvStreams = async (
   eztvUrls: string[]
 ): Promise<StreamResponse> => {
   const imdbDigits = getImdbDigits(parsed.baseId);
-  let data: EztvResponse | null = null;
+  const responses = await Promise.allSettled(
+    eztvUrls.map((baseUrl) => {
+      const normalized = normalizeBaseUrl(baseUrl);
+      const url = `${normalized}/api/get-torrents?imdb_id=${imdbDigits}`;
+      return fetchJson(url);
+    })
+  );
 
-  for (const baseUrl of eztvUrls) {
-    const normalized = normalizeBaseUrl(baseUrl);
-    const url = `${normalized}/api/get-torrents?imdb_id=${imdbDigits}`;
-    data = await fetchJson(url);
-    if (data) {
-      break;
+  const torrents = responses.flatMap((result) => {
+    if (result.status !== "fulfilled") {
+      return [];
     }
-  }
+    return result.value?.torrents ?? [];
+  });
 
-  const torrents = data?.torrents ?? [];
+  const seen = new Set<string>();
   const streams = torrents
     .filter((torrent) => matchesEpisode(torrent, parsed.season, parsed.episode))
     .map((torrent) => {
@@ -90,6 +94,10 @@ export const scrapeEztvStreams = async (
       if (!url) {
         return null;
       }
+      if (seen.has(url)) {
+        return null;
+      }
+      seen.add(url);
       return {
         name: "EZTV",
         title: formatTitle(torrent),

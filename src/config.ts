@@ -1,6 +1,7 @@
 export type AppConfig = {
   redisUrl: string;
   eztvUrls: string[];
+  ytsUrls: string[];
 };
 
 const parseUrls = (raw: string): string[] =>
@@ -21,5 +22,11 @@ export const loadConfig = (): AppConfig => {
     throw new Error("EZTV_URL must contain at least one URL");
   }
 
-  return { redisUrl, eztvUrls };
+  const ytsRaw = process.env.YTS_URL || "";
+  const ytsUrls = parseUrls(ytsRaw);
+  if (ytsUrls.length === 0) {
+    throw new Error("YTS_URL must contain at least one URL");
+  }
+
+  return { redisUrl, eztvUrls, ytsUrls };
 };

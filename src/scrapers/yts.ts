@@ -28,6 +28,7 @@ const TRACKERS = [
   "udp://tracker.opentrackr.org:1337/announce",
   "udp://9.rarbg.to:2930/announce"
 ];
+const TRACKER_SOURCES = TRACKERS.map((tracker) => `tracker:${tracker}`);
 
 const normalizeBaseUrl = (baseUrl: string): string => baseUrl.replace(/\/+$/, "");
 
@@ -73,11 +74,6 @@ const formatTitle = (movie: YtsMovie, torrent: YtsTorrent): string => {
   return `${baseTitle} (${parts.join(" • ")})`;
 };
 
-const buildMagnet = (hash: string, name: string): string => {
-  const trackers = TRACKERS.map((tracker) => `&tr=${encodeURIComponent(tracker)}`).join("");
-  return `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(name)}${trackers}`;
-};
-
 const sortBySeedsDesc = (a: YtsTorrent, b: YtsTorrent): number => {
   const aSeeds = typeof a.seeds === "number" ? a.seeds : 0;
   const bSeeds = typeof b.seeds === "number" ? b.seeds : 0;
@@ -117,8 +113,10 @@ export const scrapeYtsStreams = async (
       const displayName = `${movie.title_long || movie.title} ${torrent.quality} ${torrent.type}`;
       return {
         name: "YTS",
-        title: formatTitle(movie, torrent),
-        url: buildMagnet(torrent.hash, displayName),
+        title: displayName,
+        description: formatTitle(movie, torrent),
+        infoHash: torrent.hash.toLowerCase(),
+        sources: TRACKER_SOURCES,
         seeders: torrent.seeds
       };
     })

@@ -1,6 +1,7 @@
 import { load } from "cheerio";
 import type { ParsedStremioId } from "../parsing/stremioId.js";
 import { getTitleBasics } from "../imdb/index.js";
+import { parseMagnet } from "../parsing/magnet.js";
 import type { StreamResponse } from "../types.js";
 
 type TorrentGalaxyLink = {
@@ -265,14 +266,20 @@ export const scrapeTorrentGalaxyStreams = async (
       if (!details) {
         return null;
       }
-      const url = details.magnetURI ?? details.torrentDownload;
-      if (!url) {
+      const magnet = details.magnetURI;
+      if (!magnet) {
+        return null;
+      }
+      const parsedMagnet = parseMagnet(magnet);
+      if (!parsedMagnet) {
         return null;
       }
       return {
         name: "TGx",
-        title: formatTitle(link),
-        url,
+        title: link.name,
+        description: formatTitle(link),
+        infoHash: parsedMagnet.infoHash,
+        sources: parsedMagnet.sources.length ? parsedMagnet.sources : undefined,
         seeders: link.seeders
       };
     })

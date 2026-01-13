@@ -1,4 +1,5 @@
 import { getTitleBasics } from "../imdb/index.js";
+import { parseMagnet } from "../parsing/magnet.js";
 import type { ParsedStremioId } from "../parsing/stremioId.js";
 import type { StreamResponse } from "../types.js";
 
@@ -331,11 +332,21 @@ const scrapeSearchStreams = async (
       if (!magnet) {
         return null;
       }
+      const parsedMagnet = parseMagnet(magnet);
+      if (!parsedMagnet) {
+        return null;
+      }
       const title = parseTitleFromSlug(link);
       if (!matchesTitleText(title, titleCandidates)) {
         return null;
       }
-      return { name: "EZTV", title, url: magnet };
+      return {
+        name: "EZTV",
+        title,
+        description: title,
+        infoHash: parsedMagnet.infoHash,
+        sources: parsedMagnet.sources.length ? parsedMagnet.sources : undefined
+      };
     })
   );
 
@@ -423,18 +434,24 @@ export const scrapeEztvStreams = async (
     .filter((torrent) => matchesTitle(torrent, titleCandidates))
     .filter((torrent) => matchesEpisode(torrent, parsed.season, parsed.episode))
     .map((torrent) => {
-      const url = torrent.magnet_url ?? torrent.torrent_url;
-      if (!url) {
+      const magnet = torrent.magnet_url;
+      if (!magnet) {
         return null;
       }
-      if (seen.has(url)) {
+      const parsedMagnet = parseMagnet(magnet);
+      if (!parsedMagnet) {
         return null;
       }
-      seen.add(url);
+      if (seen.has(parsedMagnet.infoHash)) {
+        return null;
+      }
+      seen.add(parsedMagnet.infoHash);
       return {
         name: "EZTV",
-        title: formatTitle(torrent),
-        url,
+        title: torrent.title ?? torrent.filename ?? "EZTV",
+        description: formatTitle(torrent),
+        infoHash: parsedMagnet.infoHash,
+        sources: parsedMagnet.sources.length ? parsedMagnet.sources : undefined,
         seeders: torrent.seeds
       };
     })
@@ -454,10 +471,11 @@ export const scrapeEztvStreams = async (
       );
       const fallbackSeen = new Set<string>();
       const deduped = fallbackList.filter((stream) => {
-        if (fallbackSeen.has(stream.url)) {
+        const key = stream.infoHash ?? stream.url ?? "";
+        if (!key || fallbackSeen.has(key)) {
           return false;
         }
-        fallbackSeen.add(stream.url);
+        fallbackSeen.add(key);
         return true;
       });
       fallbackStreams = { streams: deduped };

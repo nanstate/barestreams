@@ -76,10 +76,11 @@ export const createAddonInterface = (config: AppConfig) => {
         return [];
       }
       return result.value.streams.filter((stream) => {
-        if (seen.has(stream.url)) {
+        const key = stream.infoHash ?? stream.url ?? "";
+        if (!key || seen.has(key)) {
           return false;
         }
-        seen.add(stream.url);
+        seen.add(key);
         return true;
       });
     });

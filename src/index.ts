@@ -10,6 +10,9 @@ const PORT = 80;
 const sendJson = (res: http.ServerResponse, statusCode: number, body: unknown): void => {
   const payload = JSON.stringify(body);
   res.writeHead(statusCode, {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "*",
     "Content-Type": "application/json",
     "Content-Length": Buffer.byteLength(payload)
   });
@@ -23,7 +26,22 @@ const start = async (): Promise<void> => {
   const addonInterface = createAddonInterface(config);
 
   const server = http.createServer(async (req, res) => {
-    if (!req.url || req.method !== "GET") {
+    if (!req.url) {
+      sendJson(res, 400, { error: "Bad request" });
+      return;
+    }
+
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+      });
+      res.end();
+      return;
+    }
+
+    if (req.method !== "GET") {
       sendJson(res, 405, { error: "Method not allowed" });
       return;
     }

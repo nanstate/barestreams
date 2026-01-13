@@ -1,4 +1,5 @@
 import { addonBuilder } from "stremio-addon-sdk";
+import type { StreamHandlerArgs } from "stremio-addon-sdk";
 import { getCache, setCache } from "./cache/redis.js";
 import { parseStremioId, type ParsedStremioId } from "./parsing/stremioId.js";
 import { scrapeEztvStreams } from "./scrapers/eztv.js";
@@ -45,7 +46,7 @@ const buildCacheKey = (type: string, parsed: ParsedStremioId): string => {
 export const createAddonInterface = (config: AppConfig) => {
   const builder = new addonBuilder(manifest);
 
-  builder.defineStreamHandler(async ({ type, id }) => {
+  builder.defineStreamHandler(async ({ type, id }: StreamHandlerArgs) => {
     if (type !== "movie" && type !== "series") {
       throw new BadRequestError("Invalid type");
     }

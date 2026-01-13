@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createGunzip } from "node:zlib";
 import path from "node:path";
+import type { ReadableStream as WebReadableStream } from "node:stream/web";
 
 type DatasetDescriptor = {
   gz: string;
@@ -58,7 +59,8 @@ const downloadFile = async (url: string, destination: string): Promise<void> => 
     throw new Error(`Failed to download ${url} (${response.status})`);
   }
 
-  await pipeline(Readable.fromWeb(response.body), createWriteStream(destination));
+  const body = response.body as unknown as WebReadableStream<Uint8Array>;
+  await pipeline(Readable.fromWeb(body), createWriteStream(destination));
 };
 
 const extractGzip = async (source: string, destination: string): Promise<void> => {

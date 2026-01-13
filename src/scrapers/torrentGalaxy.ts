@@ -279,6 +279,7 @@ export const scrapeTorrentGalaxyStreams = async (
         title: link.name,
         description: formatTitle(link),
         infoHash: parsedMagnet.infoHash,
+        sources: parsedMagnet.sources,
         seeders: link.seeders
       };
     })

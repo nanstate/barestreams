@@ -59,7 +59,7 @@ const summarizeSources = (streams: StreamResponse["streams"]): Record<string, nu
 };
 
 const stripStreamExtras = (stream: Stream): Stream => {
-  const { seeders, sources, ...rest } = stream;
+  const { seeders, ...rest } = stream;
   return rest;
 };
 

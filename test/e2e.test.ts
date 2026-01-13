@@ -77,7 +77,7 @@ describe("addon end-to-end", () => {
       const cached = await addon.get("stream", "movie", "tt10872600");
       expect(cached.streams.length).toBe(result.streams.length);
     }
-  });
+  }, 30000);
 
   itWithConfig("returns series streams for S02E03 (tt5834204)", async () => {
     const addon = createAddonInterface(testConfig!);

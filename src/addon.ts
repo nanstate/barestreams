@@ -120,6 +120,16 @@ const stripStreamExtras = (stream: Stream): Stream => {
   return rest;
 };
 
+const isZeroSeederMagnet = (stream: Stream): boolean => {
+  if (typeof stream.seeders !== "number" || stream.seeders > 0) {
+    return false;
+  }
+  if (stream.infoHash) {
+    return true;
+  }
+  return Boolean(stream.url && stream.url.startsWith("magnet:?"));
+};
+
 const logStreamRequest = (params: {
   type: string;
   id: string;
@@ -198,8 +208,9 @@ export const createAddonInterface = (config: AppConfig) => {
         return true;
       });
     });
+    const filteredStreams = streams.filter((stream) => !isZeroSeederMagnet(stream));
 
-    const sortedStreams = streams.slice().sort(sortBySeedersDesc);
+    const sortedStreams = filteredStreams.slice().sort(sortBySeedersDesc);
     const response: StreamResponse = {
       streams: sortedStreams.map((stream) => stripStreamExtras(applyBingeGroup(stream, parsed, type)))
     };

@@ -117,8 +117,8 @@ export const formatStreamDisplay = (options: StreamDisplayOptions): {
 } => {
   const imdbTitle = options.imdbTitle?.trim() || "Unknown title";
   const qualityLabel = formatQualityLabel(resolveQuality(options));
-  const title = `Watch\n${qualityLabel}`;
-  const name = `Watch ${qualityLabel}`;
+  const title = `Watch ${qualityLabel}`;
+  const name = title;
   const episodeLine = formatEpisode(options.season, options.episode);
   const slugLine =
     buildTorrentSlug(options.torrentName, imdbTitle) || options.quality?.trim() || "Unknown release";

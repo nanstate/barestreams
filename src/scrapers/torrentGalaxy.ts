@@ -4,6 +4,7 @@ import { getTitleBasics } from "../imdb/index.js";
 import { parseMagnet } from "../parsing/magnet.js";
 import { extractQualityHint, formatStreamDisplay } from "../streams/display.js";
 import type { Stream, StreamResponse } from "../types.js";
+import { fetchText, normalizeBaseUrl } from "./http.js";
 
 type TorrentGalaxyLink = {
   name: string;
@@ -18,27 +19,7 @@ type TorrentGalaxyDetails = {
   torrentDownload?: string;
 };
 
-const normalizeBaseUrl = (baseUrl: string): string => baseUrl.replace(/\/+$/, "");
-const DEBUG = process.env.DEBUG_TGX === "1";
-
-const fetchHtml = async (url: string): Promise<string | null> => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
-  try {
-    const response = await fetch(url, {
-      headers: { "User-Agent": "lazy-torrentio" },
-      signal: controller.signal
-    });
-    if (!response.ok) {
-      return null;
-    }
-    return await response.text();
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
-  }
-};
+const fetchHtml = (url: string): Promise<string | null> => fetchText(url);
 
 const buildSearchUrl = (baseUrl: string, query: string, page: number): string => {
   const normalized = normalizeBaseUrl(baseUrl);
@@ -251,9 +232,6 @@ export const scrapeTorrentGalaxyStreams = async (
     if (links.length >= 20) {
       break;
     }
-    if (DEBUG) {
-      console.warn(`[TGx] searching ${baseUrl} query="${query}"`);
-    }
     const batch = await searchTorrentGalaxy(baseUrl, query, 20 - links.length);
     links.push(...batch);
   }
@@ -265,9 +243,6 @@ export const scrapeTorrentGalaxyStreams = async (
         break;
       }
       const fallbackQuery = normalizeQuery(baseTitle);
-      if (DEBUG) {
-        console.warn(`[TGx] fallback search ${baseUrl} query="${fallbackQuery}"`);
-      }
       const batch = await searchTorrentGalaxy(baseUrl, fallbackQuery, 20 - filteredLinks.length);
       filteredLinks.push(...batch);
     }
@@ -279,9 +254,6 @@ export const scrapeTorrentGalaxyStreams = async (
 
   const uniqueLinks = dedupeLinks(filteredLinks);
   const sortedLinks = uniqueLinks.slice().sort(sortBySeedersDesc);
-  if (DEBUG) {
-    console.warn(`[TGx] ${sortedLinks.length} links after filtering`);
-  }
   const detailResults = await Promise.allSettled(
     sortedLinks.map((link) => fetchTorrentDetails(link.url))
   );

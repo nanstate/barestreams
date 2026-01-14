@@ -50,6 +50,7 @@ const start = async (): Promise<void> => {
     const path = url.pathname;
 
     if (path === "/manifest.json") {
+      console.info(`Manifest requested: ${req.method} ${path}`);
       sendJson(res, 200, addonInterface.manifest);
       return;
     }
@@ -82,9 +83,7 @@ const start = async (): Promise<void> => {
     sendJson(res, 404, { error: "Not found" });
   });
 
-  server.listen(PORT, () => {
-    console.log(`Install URL: http://localhost:${PORT}/manifest.json`);
-  });
+  server.listen(PORT);
 };
 
 start().catch((err) => {

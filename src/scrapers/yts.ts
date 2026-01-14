@@ -1,5 +1,6 @@
 import type { ParsedStremioId } from "../parsing/stremioId.js";
 import { formatStreamDisplay } from "../streams/display.js";
+import { fetchJson, normalizeBaseUrl } from "./http.js";
 import type { Stream, StreamResponse } from "../types.js";
 
 type YtsTorrent = {
@@ -24,29 +25,8 @@ type YtsResponse = {
   };
 };
 
-const normalizeBaseUrl = (baseUrl: string): string => baseUrl.replace(/\/+$/, "");
-
 const ensureApiRoot = (baseUrl: string): string =>
   baseUrl.includes("/api/") ? baseUrl : `${baseUrl}/api/v2`;
-
-const fetchJson = async (url: string): Promise<YtsResponse | null> => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
-  try {
-    const response = await fetch(url, {
-      headers: { "User-Agent": "lazy-torrentio" },
-      signal: controller.signal
-    });
-    if (!response.ok) {
-      return null;
-    }
-    return (await response.json()) as YtsResponse;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
-  }
-};
 
 const buildListUrl = (baseUrl: string, imdbId: string): string => {
   const normalized = normalizeBaseUrl(baseUrl);
@@ -74,7 +54,7 @@ export const scrapeYtsStreams = async (
 ): Promise<StreamResponse> => {
   const imdbId = parsed.baseId;
   const responses = await Promise.allSettled(
-    ytsUrls.map((baseUrl) => fetchJson(buildListUrl(baseUrl, imdbId)))
+    ytsUrls.map((baseUrl) => fetchJson<YtsResponse>(buildListUrl(baseUrl, imdbId)))
   );
 
   const movies = responses.flatMap((result) => {

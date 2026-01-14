@@ -17,3 +17,5 @@ services:
       - TGX_URL=https://torrentgalaxy.hair
     ports:
       - "19080:80"
+    volumes:
+      - ./data/imdb:/app/data/imdb

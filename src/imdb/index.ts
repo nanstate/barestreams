@@ -32,6 +32,7 @@ const DATASETS: DatasetDescriptor[] = [{ gz: "title.basics.tsv.gz", tsv: "title.
 
 const refreshes = new Map<string, Promise<void>>();
 const titleBasicsCache = new Map<string, TitleBasics | null>();
+let refreshInterval: NodeJS.Timeout | null = null;
 
 const datasetPath = (tsv: string): string => path.join(DATASET_DIR, tsv);
 
@@ -117,6 +118,16 @@ export const ensureImdbDatasets = async (): Promise<void> => {
         });
       });
     }
+  }
+
+  if (!refreshInterval) {
+    refreshInterval = setInterval(() => {
+      for (const descriptor of DATASETS) {
+        refreshDataset(descriptor).catch((err) => {
+          console.error(`Failed to refresh ${descriptor.tsv}:`, err);
+        });
+      }
+    }, STALE_MS);
   }
 };
 

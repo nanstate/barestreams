@@ -72,7 +72,12 @@ const formatBytes = (bytes: number): string => {
   return `${value.toFixed(precision)} ${units[unitIndex]}`;
 };
 
-const formatInfoLine = (seeders?: number, sizeBytes?: number | null, sizeLabel?: string | null): string => {
+const formatInfoLine = (
+  seeders?: number,
+  sizeBytes?: number | null,
+  sizeLabel?: string | null,
+  sourceLabel?: string | null
+): string => {
   const seederCount = typeof seeders === "number" && seeders > 0 ? seeders : 0;
   let sizeText: string | null = null;
   if (typeof sizeBytes === "number" && sizeBytes > 0) {
@@ -83,6 +88,10 @@ const formatInfoLine = (seeders?: number, sizeBytes?: number | null, sizeLabel?:
   const parts = [`🌱 ${seederCount}`];
   if (sizeText) {
     parts.push(`💾 ${sizeText}`);
+  }
+  if (sourceLabel) {
+    const label = sourceLabel.trim() || "Unknown";
+    parts.push(`🔗 ${label}`);
   }
   return parts.join(" • ");
 };
@@ -114,8 +123,13 @@ export const formatStreamDisplay = (options: StreamDisplayOptions): {
   const slugLine =
     buildTorrentSlug(options.torrentName, imdbTitle) || options.quality?.trim() || "Unknown release";
   const sourceLabel = options.source?.trim() || "Unknown";
-  const slugDisplay = `${slugLine} (${sourceLabel})`;
-  const infoLine = formatInfoLine(options.seeders, options.sizeBytes ?? null, options.sizeLabel ?? null);
+  const slugDisplay = slugLine;
+  const infoLine = formatInfoLine(
+    options.seeders,
+    options.sizeBytes ?? null,
+    options.sizeLabel ?? null,
+    sourceLabel
+  );
   const lines = [imdbTitle, episodeLine, slugDisplay, infoLine].filter((line): line is string =>
     Boolean(line)
   );

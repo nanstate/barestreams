@@ -56,6 +56,10 @@ const extractSourceFromDescription = (description?: string): string | null => {
   }
   const lines = description.split("\n").reverse();
   for (const line of lines) {
+    const sourceMatch = line.match(/🔗\s*([^•]+)\s*$/);
+    if (sourceMatch) {
+      return sourceMatch[1].trim();
+    }
     const match = line.match(/\(([^)]+)\)\s*$/);
     if (match) {
       return match[1].trim();

@@ -15,6 +15,7 @@ services:
       - EZTV_URL=https://eztv.re
       - YTS_URL=https://yts.lt
       - TGX_URL=https://torrentgalaxy.hair
+      - PIRATEBAY_URL=https://thepiratebay.org
     ports:
       - "19080:80"
     volumes:

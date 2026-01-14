@@ -3,6 +3,7 @@ export type AppConfig = {
   eztvUrls: string[];
   ytsUrls: string[];
   tgxUrls: string[];
+  pirateBayUrls: string[];
 };
 
 const parseUrls = (raw: string): string[] =>
@@ -31,5 +32,11 @@ export const loadConfig = (): AppConfig => {
     throw new Error("TGX_URL must contain at least one URL");
   }
 
-  return { redisUrl: redisUrl || undefined, eztvUrls, ytsUrls, tgxUrls };
+  const pirateBayRaw = process.env.PIRATEBAY_URL || "https://thepiratebay.org";
+  const pirateBayUrls = parseUrls(pirateBayRaw);
+  if (pirateBayUrls.length === 0) {
+    throw new Error("PIRATEBAY_URL must contain at least one URL");
+  }
+
+  return { redisUrl: redisUrl || undefined, eztvUrls, ytsUrls, tgxUrls, pirateBayUrls };
 };

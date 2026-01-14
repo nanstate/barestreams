@@ -21,7 +21,7 @@ Addon will be available at:
 
 ```bash
 npm install
-REDIS_URL=redis://localhost:6379 EZTV_URL=https://eztv.re YTS_URL=https://yts.mx TGX_URL=https://torrentgalaxy.hair npm run dev
+REDIS_URL=redis://localhost:6379 EZTV_URL=https://eztv.re YTS_URL=https://yts.lt TGX_URL=https://torrentgalaxy.hair PIRATEBAY_URL=https://thepiratebay.org npm run dev
 ```
 
 Addon will be available at:
@@ -34,6 +34,7 @@ Addon will be available at:
 - `EZTV_URL`: Comma-separated list of EZTV base URLs to try in order.
 - `YTS_URL`: Comma-separated list of YTS base URLs to try in order.
 - `TGX_URL`: Comma-separated list of TorrentGalaxy base URLs to try in order.
+- `PIRATEBAY_URL`: Comma-separated list of Pirate Bay base URLs to try in order.
 
 ## IMDb datasets
 

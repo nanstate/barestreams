@@ -39,19 +39,17 @@ vi.mock("../src/imdb/index.js", () => {
 
 const loadTestConfig = (): AppConfig | null => {
   const redisUrl = process.env.REDIS_URL;
-  const ytsUrl = process.env.YTS_URL;
-  const tgxUrl = process.env.TGX_URL;
-  const eztvUrl = process.env.EZTV_URL;
-
-  if (!ytsUrl || !tgxUrl || !eztvUrl) {
-    return null;
-  }
+  const ytsUrl = process.env.YTS_URL || "https://yts.lt";
+  const tgxUrl = process.env.TGX_URL || "https://torrentgalaxy.hair";
+  const eztvUrl = process.env.EZTV_URL || "https://eztv.re";
+  const pirateBayUrl = process.env.PIRATEBAY_URL || "https://thepiratebay.org";
 
   return {
     redisUrl: redisUrl || undefined,
     ytsUrls: [ytsUrl],
     tgxUrls: [tgxUrl],
-    eztvUrls: [eztvUrl]
+    eztvUrls: [eztvUrl],
+    pirateBayUrls: [pirateBayUrl]
   };
 };
 

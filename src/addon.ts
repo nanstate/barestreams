@@ -3,6 +3,7 @@ import type { StreamHandlerArgs } from "stremio-addon-sdk";
 import { getCache, setCache } from "./cache/redis.js";
 import { parseStremioId, type ParsedStremioId } from "./parsing/stremioId.js";
 import { scrapeEztvStreams } from "./scrapers/eztv.js";
+import { scrapePirateBayStreams } from "./scrapers/pirateBay.js";
 import { scrapeTorrentGalaxyStreams } from "./scrapers/torrentGalaxy.js";
 import { scrapeYtsStreams } from "./scrapers/yts.js";
 import type { AppConfig } from "./config.js";
@@ -169,11 +170,13 @@ export const createAddonInterface = (config: AppConfig) => {
       type === "movie"
         ? [
             scrapeYtsStreams(parsed, config.ytsUrls),
-            scrapeTorrentGalaxyStreams(parsed, config.tgxUrls)
+            scrapeTorrentGalaxyStreams(parsed, config.tgxUrls),
+            scrapePirateBayStreams(parsed, config.pirateBayUrls, "movie")
           ]
         : [
             scrapeEztvStreams(parsed, config.eztvUrls),
-            scrapeTorrentGalaxyStreams(parsed, config.tgxUrls)
+            scrapeTorrentGalaxyStreams(parsed, config.tgxUrls),
+            scrapePirateBayStreams(parsed, config.pirateBayUrls, "series")
           ]
     );
 

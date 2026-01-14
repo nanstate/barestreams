@@ -70,7 +70,7 @@ describe("addon end-to-end", () => {
 
     expect(result.streams.length).toBeGreaterThan(0);
     expect(result.streams.some((stream) => stream.name === "YTS")).toBe(true);
-    expect(result.streams.some((stream) => stream.name === "TGx")).toBe(true);
+    expect(result.streams.some((stream) => stream.name === "TGX")).toBe(true);
 
     if (testConfig?.redisUrl) {
       const cached = await addon.get("stream", "movie", "tt10872600");

@@ -85,6 +85,7 @@ export const scrapeYtsStreams = async (
         imdbTitle,
         torrentName,
         quality: qualityLabel,
+        source: "YTS",
         seeders: torrent.seeds,
         sizeBytes: torrent.size_bytes
       });

@@ -269,7 +269,8 @@ const scrapeSearchStreams = async (
         season: displayContext.season,
         episode: displayContext.episode,
         torrentName: title,
-        quality
+        quality,
+        source: "EZTV"
       });
       return {
         name: display.name,
@@ -374,6 +375,7 @@ export const scrapeEztvStreams = async (
         episode: parsed.episode,
         torrentName,
         quality,
+        source: "EZTV",
         seeders: torrent.seeds,
         sizeBytes: torrent.size_bytes
       });

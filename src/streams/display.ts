@@ -4,6 +4,7 @@ export type StreamDisplayOptions = {
   episode?: number;
   torrentName?: string;
   quality?: string | null;
+  source?: string | null;
   seeders?: number;
   sizeBytes?: number | null;
   sizeLabel?: string | null;
@@ -27,18 +28,7 @@ const formatEpisode = (season?: number, episode?: number): string | null => {
   if (!season || !episode) {
     return null;
   }
-  const seasonStr = season.toString().padStart(2, "0");
-  const episodeStr = episode.toString().padStart(2, "0");
-  return `📌 S${seasonStr}E${episodeStr}`;
-};
-
-const formatEpisodeTag = (season?: number, episode?: number): string | null => {
-  if (!season || !episode) {
-    return null;
-  }
-  const seasonStr = season.toString().padStart(2, "0");
-  const episodeStr = episode.toString().padStart(2, "0");
-  return `S${seasonStr}E${episodeStr}`;
+  return `Season ${season} Episode ${episode}`;
 };
 
 const buildTitlePattern = (title: string): RegExp | null => {
@@ -64,6 +54,7 @@ const buildTorrentSlug = (torrentName?: string, imdbTitle?: string): string | nu
       stripped = stripped.replace(pattern, "");
     }
   }
+  stripped = stripped.replace(/\bS\d{1,2}E\d{1,2}\b/i, "");
   const cleaned = stripped
     .replace(/[._]+/g, " ")
     .replace(/\s+/g, " ")
@@ -84,20 +75,32 @@ const formatBytes = (bytes: number): string => {
   return `${value.toFixed(precision)} ${units[unitIndex]}`;
 };
 
-const formatInfoLine = (seeders?: number, sizeBytes?: number | null, sizeLabel?: string | null): string | null => {
-  const parts: string[] = [];
-  if (typeof seeders === "number" && seeders > 0) {
-    parts.push(`🌱 ${seeders}`);
-  }
+const formatInfoLine = (seeders?: number, sizeBytes?: number | null, sizeLabel?: string | null): string => {
+  const seederCount = typeof seeders === "number" && seeders > 0 ? seeders : 0;
+  let sizeText: string | null = null;
   if (typeof sizeBytes === "number" && sizeBytes > 0) {
-    parts.push(`💾 ${formatBytes(sizeBytes)}`);
+    sizeText = formatBytes(sizeBytes);
   } else if (sizeLabel) {
-    parts.push(`💾 ${sizeLabel.trim()}`);
+    sizeText = sizeLabel.trim();
   }
-  if (parts.length === 0) {
-    return null;
+  if (!sizeText) {
+    sizeText = "Unknown size";
   }
-  return parts.join(" • ");
+  return `🌱 ${seederCount} • 💾 ${sizeText}`;
+};
+
+const resolveQuality = (options: StreamDisplayOptions): string => {
+  const hint =
+    extractQualityHint(options.torrentName ?? "") ?? extractQualityHint(options.quality ?? "") ?? null;
+  return hint ?? "480p";
+};
+
+const formatQualityLabel = (quality: string): string => {
+  const normalized = quality.trim().toLowerCase();
+  if (normalized === "2160p" || normalized === "4k" || normalized === "uhd") {
+    return "4K";
+  }
+  return normalized;
 };
 
 export const formatStreamDisplay = (options: StreamDisplayOptions): {
@@ -105,26 +108,23 @@ export const formatStreamDisplay = (options: StreamDisplayOptions): {
   title: string;
   description?: string;
 } => {
-  const qualityLabel = options.quality?.trim();
-  const imdbTitle = options.imdbTitle?.trim();
-  const episodeTag = formatEpisodeTag(options.season, options.episode);
-  const name =
-    qualityLabel ||
-    (imdbTitle && episodeTag ? `${imdbTitle} ${episodeTag}` : imdbTitle) ||
-    episodeTag ||
-    "Stream";
-  const titleEmoji = options.season && options.episode ? "📺" : "🎬";
+  const imdbTitle = options.imdbTitle?.trim() || "Unknown title";
+  const qualityLabel = formatQualityLabel(resolveQuality(options));
+  const name = options.source?.trim() || "Stream";
+  const title = `Watch ${qualityLabel}`;
   const episodeLine = formatEpisode(options.season, options.episode);
-  const slugLine = buildTorrentSlug(options.torrentName, options.imdbTitle);
-  const titleBase = imdbTitle || slugLine || "Stream";
-  const titleLine = `${titleEmoji} ${titleBase}`;
-  const slugDisplay = imdbTitle && slugLine ? `🏷️ ${slugLine}` : null;
+  const slugLine =
+    buildTorrentSlug(options.torrentName, imdbTitle) || options.quality?.trim() || "Unknown release";
+  const sourceLabel = options.source?.trim() || "Unknown";
+  const slugDisplay = `${slugLine} (${sourceLabel})`;
   const infoLine = formatInfoLine(options.seeders, options.sizeBytes ?? null, options.sizeLabel ?? null);
-  const lines = [titleLine, episodeLine, slugDisplay].filter((line): line is string => Boolean(line));
+  const lines = [imdbTitle, episodeLine, slugDisplay, infoLine].filter((line): line is string =>
+    Boolean(line)
+  );
 
   return {
     name,
-    title: lines.join("\n"),
-    description: infoLine ?? undefined
+    title,
+    description: lines.join("\n")
   };
 };

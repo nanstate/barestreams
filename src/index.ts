@@ -1,7 +1,7 @@
 import * as http from "node:http";
 import { createAddonInterface } from "./addon.js";
-import { loadConfig } from "./config.js";
 import { initRedis } from "./cache/redis.js";
+import { loadConfig } from "./config.js";
 import { ensureImdbDatasets } from "./imdb/index.js";
 import { BadRequestError } from "./types.js";
 
@@ -84,6 +84,7 @@ const start = async (): Promise<void> => {
   });
 
   server.listen(PORT);
+  console.info(`Manifest available at http://localhost:${PORT}/manifest.json`);
 };
 
 start().catch((err) => {

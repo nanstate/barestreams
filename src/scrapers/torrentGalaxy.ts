@@ -284,6 +284,7 @@ export const scrapeTorrentGalaxyStreams = async (
         episode: parsed.episode,
         torrentName: link.name,
         quality,
+        source: "TGX",
         seeders: link.seeders,
         sizeBytes,
         sizeLabel: link.size

@@ -43,13 +43,15 @@ const loadTestConfig = (): AppConfig | null => {
   const tgxUrl = process.env.TGX_URL || "https://torrentgalaxy.hair";
   const eztvUrl = process.env.EZTV_URL || "https://eztv.re";
   const pirateBayUrl = process.env.PIRATEBAY_URL || "https://thepiratebay.org";
+  const x1337xUrl = process.env.X1337X_URL || "https://1337x.to";
 
   return {
     redisUrl: redisUrl || undefined,
     ytsUrls: [ytsUrl],
     tgxUrls: [tgxUrl],
     eztvUrls: [eztvUrl],
-    pirateBayUrls: [pirateBayUrl]
+    pirateBayUrls: [pirateBayUrl],
+    x1337xUrls: [x1337xUrl]
   };
 };
 

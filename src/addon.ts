@@ -5,6 +5,7 @@ import { parseStremioId, type ParsedStremioId } from "./parsing/stremioId.js";
 import { scrapeEztvStreams } from "./scrapers/eztv.js";
 import { scrapePirateBayStreams } from "./scrapers/pirateBay.js";
 import { scrapeTorrentGalaxyStreams } from "./scrapers/torrentGalaxy.js";
+import { scrapeX1337xStreams } from "./scrapers/x1337x.js";
 import { scrapeYtsStreams } from "./scrapers/yts.js";
 import type { AppConfig } from "./config.js";
 import { BadRequestError, type Stream, type StreamResponse } from "./types.js";
@@ -178,12 +179,14 @@ export const createAddonInterface = (config: AppConfig) => {
         ? [
             scrapeYtsStreams(parsed, config.ytsUrls),
             scrapeTorrentGalaxyStreams(parsed, config.tgxUrls),
-            scrapePirateBayStreams(parsed, config.pirateBayUrls, "movie")
+            scrapePirateBayStreams(parsed, config.pirateBayUrls, "movie"),
+            scrapeX1337xStreams(parsed, config.x1337xUrls)
           ]
         : [
             scrapeEztvStreams(parsed, config.eztvUrls),
             scrapeTorrentGalaxyStreams(parsed, config.tgxUrls),
-            scrapePirateBayStreams(parsed, config.pirateBayUrls, "series")
+            scrapePirateBayStreams(parsed, config.pirateBayUrls, "series"),
+            scrapeX1337xStreams(parsed, config.x1337xUrls)
           ]
     );
 

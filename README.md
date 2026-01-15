@@ -25,7 +25,7 @@ Flaresolverr (optional) will be available at:
 
 ```bash
 npm install
-REDIS_URL=redis://localhost:6379 EZTV_URL=https://eztv.re YTS_URL=https://yts.lt TGX_URL=https://torrentgalaxy.hair PIRATEBAY_URL=https://thepiratebay.org npm run dev
+REDIS_URL=redis://localhost:6379 EZTV_URL=https://eztv.re YTS_URL=https://yts.lt TGX_URL=https://torrentgalaxy.hair PIRATEBAY_URL=https://thepiratebay.org X1337X_URL=https://1337x.to npm run dev
 ```
 
 Addon will be available at:
@@ -39,6 +39,7 @@ Addon will be available at:
 - `YTS_URL`: Comma-separated list of YTS base URLs to try in order.
 - `TGX_URL`: Comma-separated list of TorrentGalaxy base URLs to try in order.
 - `PIRATEBAY_URL`: Comma-separated list of Pirate Bay base URLs to try in order.
+- `X1337X_URL`: Comma-separated list of 1337x base URLs to try in order.
 
 ## IMDb datasets
 

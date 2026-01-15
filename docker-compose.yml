@@ -46,5 +46,6 @@ services:
       - YTS_URL=https://yts.lt
       - TGX_URL=https://torrentgalaxy.hair
       - PIRATEBAY_URL=https://thepiratebay.org
+      - X1337X_URL=https://1337x.to
     volumes:
       - ./data/imdb:/app/data/imdb

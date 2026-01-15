@@ -1,10 +1,11 @@
 import { load } from "cheerio";
 import type { ParsedStremioId } from "../parsing/stremioId.js";
-import { getTitleBasics } from "../imdb/index.js";
 import { parseMagnet } from "../parsing/magnet.js";
-import { extractQualityHint, formatStreamDisplay } from "../streams/display.js";
+import { extractQualityHint } from "../streams/quality.js";
+import { formatStreamDisplay } from "../streams/display.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { fetchText, normalizeBaseUrl } from "./http.js";
+import { buildQueries, matchesEpisode, normalizeQuery } from "./query.js";
 
 type TorrentGalaxyLink = {
   name: string;
@@ -96,44 +97,6 @@ const fetchTorrentDetails = async (url: string): Promise<TorrentGalaxyDetails | 
   return { magnetURI, torrentDownload: resolvedDownload };
 };
 
-const isSeriesTitleType = (titleType?: string): boolean => {
-  if (!titleType) {
-    return false;
-  }
-  const normalized = titleType.toLowerCase();
-  return normalized === "tvseries" || normalized === "tvminiseries" || normalized === "tvepisode";
-};
-
-const normalizeQuery = (value: string): string => {
-  return value
-    .replace(/[^a-zA-Z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-};
-
-const formatEpisodeSuffix = (season?: number, episode?: number): string | null => {
-  if (!season || !episode) {
-    return null;
-  }
-  const seasonStr = season.toString().padStart(2, "0");
-  const episodeStr = episode.toString().padStart(2, "0");
-  return `S${seasonStr}E${episodeStr}`;
-};
-
-const buildQueries = async (
-  parsed: ParsedStremioId
-): Promise<{ baseTitle: string; query: string; episodeSuffix: string | null }> => {
-  const basics = await getTitleBasics(parsed.baseId);
-  const baseTitle = basics?.primaryTitle || basics?.originalTitle || parsed.baseId;
-  const episodeSuffix = formatEpisodeSuffix(parsed.season, parsed.episode);
-  const isSeries = isSeriesTitleType(basics?.titleType) || Boolean(episodeSuffix);
-
-  if (isSeries && episodeSuffix) {
-    return { baseTitle, query: normalizeQuery(`${baseTitle} ${episodeSuffix}`), episodeSuffix };
-  }
-  return { baseTitle, query: normalizeQuery(baseTitle), episodeSuffix: null };
-};
-
 const parseSizeToBytes = (rawSize: string): number | null => {
   const match = rawSize.trim().match(/([\d.]+)\s*(B|KB|MB|GB|TB|KIB|MIB|GIB|TIB)/i);
   if (!match) {
@@ -195,31 +158,6 @@ const dedupeLinks = (links: TorrentGalaxyLink[]): TorrentGalaxyLink[] => {
 };
 
 const sortBySeedersDesc = (a: TorrentGalaxyLink, b: TorrentGalaxyLink): number => b.seeders - a.seeders;
-
-const parseEpisodeFromText = (text: string): { season: number; episode: number } | null => {
-  const normalized = text.replace(/\s+/g, " ").trim();
-  const match = normalized.match(/S(\d{1,2})E(\d{1,2})/i) ?? normalized.match(/(\d{1,2})x(\d{1,2})/i);
-  if (!match) {
-    return null;
-  }
-  const season = Number(match[1]);
-  const episode = Number(match[2]);
-  if (!Number.isFinite(season) || !Number.isFinite(episode)) {
-    return null;
-  }
-  return { season, episode };
-};
-
-const matchesEpisode = (name: string, season?: number, episode?: number): boolean => {
-  if (!season || !episode) {
-    return true;
-  }
-  const parsed = parseEpisodeFromText(name);
-  if (!parsed) {
-    return false;
-  }
-  return parsed.season === season && parsed.episode === episode;
-};
 
 export const scrapeTorrentGalaxyStreams = async (
   parsed: ParsedStremioId,

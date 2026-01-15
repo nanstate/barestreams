@@ -1,9 +1,11 @@
 import { getTitleBasics } from "../imdb/index.js";
 import { parseMagnet } from "../parsing/magnet.js";
 import type { ParsedStremioId } from "../parsing/stremioId.js";
-import { extractQualityHint, formatStreamDisplay } from "../streams/display.js";
+import { extractQualityHint } from "../streams/quality.js";
+import { formatStreamDisplay } from "../streams/display.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { fetchJson, fetchText, normalizeBaseUrl } from "./http.js";
+import { formatEpisodeSuffix, parseEpisodeFromText } from "./query.js";
 
 type EztvTorrent = {
   title?: string;
@@ -106,32 +108,6 @@ const fetchAllTorrents = async (baseUrl: string, imdbId: string): Promise<EztvTo
   }
 
   return torrents;
-};
-
-const parseEpisodeFromText = (text: string): { season: number; episode: number } | null => {
-  const normalized = text.replace(/\s+/g, " ").trim();
-  const match =
-    normalized.match(/S(?:eason)?\s*0?(\d{1,2})\s*E(?:pisode)?\s*0?(\d{1,2})/i) ??
-    normalized.match(/S(\d{1,2})\s*E(\d{1,2})/i) ??
-    normalized.match(/(\d{1,2})x(\d{1,2})/i);
-  if (!match) {
-    return null;
-  }
-  const season = Number(match[1]);
-  const episode = Number(match[2]);
-  if (!Number.isFinite(season) || !Number.isFinite(episode)) {
-    return null;
-  }
-  return { season, episode };
-};
-
-const formatEpisodeSuffix = (season?: number, episode?: number): string | null => {
-  if (!season || !episode) {
-    return null;
-  }
-  const seasonStr = season.toString().padStart(2, "0");
-  const episodeStr = episode.toString().padStart(2, "0");
-  return `S${seasonStr}E${episodeStr}`;
 };
 
 const normalizeTitle = (value: string): string => {

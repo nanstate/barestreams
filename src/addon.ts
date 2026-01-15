@@ -9,6 +9,7 @@ import { scrapeYtsStreams } from "./scrapers/yts.js";
 import type { AppConfig } from "./config.js";
 import { BadRequestError, type Stream, type StreamResponse } from "./types.js";
 import { getTitleBasics } from "./imdb/index.js";
+import { extractQualityHint } from "./streams/quality.js";
 
 export const CACHE_TTL_SECONDS = 604800;
 
@@ -83,17 +84,9 @@ const normalizeBingeSegment = (value: string): string =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-const extractQualityHint = (stream: Stream): string | null => {
+const extractStreamQuality = (stream: Stream): string | null => {
   const text = [stream.title, stream.description, stream.name].filter(Boolean).join(" ");
-  const match = text.match(/\b(2160p|1080p|720p|480p|4k|uhd)\b/i);
-  if (!match) {
-    return null;
-  }
-  const quality = match[1].toLowerCase();
-  if (quality === "4k" || quality === "uhd") {
-    return "2160p";
-  }
-  return quality;
+  return extractQualityHint(text);
 };
 
 const applyBingeGroup = (stream: Stream, parsed: ParsedStremioId, type: string): Stream => {
@@ -103,7 +96,7 @@ const applyBingeGroup = (stream: Stream, parsed: ParsedStremioId, type: string):
   if (stream.behaviorHints?.bingeGroup) {
     return stream;
   }
-  const quality = extractQualityHint(stream) ?? "unknown";
+  const quality = extractStreamQuality(stream) ?? "unknown";
   const source = normalizeBingeSegment(extractSourceFromDescription(stream.description) ?? "stream");
   const bingeGroup = `lazy-torrentio-${source}-${quality}`;
   return {

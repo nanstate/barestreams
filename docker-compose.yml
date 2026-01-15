@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   gluetun:
     image: qmcgaw/gluetun:latest
@@ -20,13 +18,15 @@ services:
   redis:
     image: redis:7-alpine
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
     network_mode: "service:gluetun"
 
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
     environment:
       - LOG_LEVEL=info
     network_mode: "service:gluetun"
@@ -34,9 +34,12 @@ services:
   lazy-torrentio:
     build: .
     depends_on:
-      - gluetun
-      - redis
-      - flaresolverr
+      gluetun:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      flaresolverr:
+        condition: service_started
     network_mode: "service:gluetun"
     env_file:
       - .env

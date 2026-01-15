@@ -156,11 +156,11 @@ const sortBySeedersDesc = (a: X1337xLink, b: X1337xLink): number => b.seeders - 
 
 export const scrapeX1337xStreams = async (
   parsed: ParsedStremioId,
-  baseUrls: string[]
+  baseUrls: string[],
+  detailLimit = 10
 ): Promise<StreamResponse> => {
   const { baseTitle, query, episodeSuffix } = await buildQueries(parsed);
-  const searchLimit = 20;
-  const detailLimit = 10;
+  const searchLimit = Math.max(1, detailLimit);
   const links: X1337xLink[] = [];
 
   for (const baseUrl of baseUrls) {

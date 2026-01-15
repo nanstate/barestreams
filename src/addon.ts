@@ -180,13 +180,13 @@ export const createAddonInterface = (config: AppConfig) => {
             scrapeYtsStreams(parsed, config.ytsUrls),
             scrapeTorrentGalaxyStreams(parsed, config.tgxUrls),
             scrapePirateBayStreams(parsed, config.pirateBayUrls, "movie"),
-            scrapeX1337xStreams(parsed, config.x1337xUrls)
+            scrapeX1337xStreams(parsed, config.x1337xUrls, config.flareSolverrSessions)
           ]
         : [
             scrapeEztvStreams(parsed, config.eztvUrls),
             scrapeTorrentGalaxyStreams(parsed, config.tgxUrls),
             scrapePirateBayStreams(parsed, config.pirateBayUrls, "series"),
-            scrapeX1337xStreams(parsed, config.x1337xUrls)
+            scrapeX1337xStreams(parsed, config.x1337xUrls, config.flareSolverrSessions)
           ]
     );
 

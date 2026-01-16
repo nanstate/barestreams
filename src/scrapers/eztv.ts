@@ -389,7 +389,7 @@ export const scrapeEztvStreams = async (
         title: display.title,
         description: display.description,
         infoHash: parsedMagnet.infoHash,
-        sources: parsedMagnet.sources,
+        // sources: parsedMagnet.sources,
         behaviorHints: buildBehaviorHints(torrent),
         seeders: torrent.seeds
       };

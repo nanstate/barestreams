@@ -12,9 +12,7 @@ const sendJson = (res: http.ServerResponse, statusCode: number, body: unknown): 
   const payload = JSON.stringify(body);
   res.writeHead(statusCode, {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "*",
-    "Content-Type": "application/json",
+    "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(payload)
   });
   res.end(payload);
@@ -44,8 +42,6 @@ const start = async (): Promise<void> => {
     if (req.method === "OPTIONS") {
       res.writeHead(204, {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "*"
       });
       res.end();
       return;

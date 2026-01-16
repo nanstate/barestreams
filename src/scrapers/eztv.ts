@@ -1,8 +1,8 @@
 import { getTitleBasics } from "../imdb/index.js";
 import { parseMagnet } from "../parsing/magnet.js";
 import type { ParsedStremioId } from "../parsing/stremioId.js";
-import { extractQualityHint } from "../streams/quality.js";
 import { formatStreamDisplay } from "../streams/display.js";
+import { extractQualityHint } from "../streams/quality.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { fetchJson, fetchText, normalizeBaseUrl } from "./http.js";
 import { formatEpisodeSuffix, parseEpisodeFromText } from "./query.js";
@@ -311,7 +311,7 @@ const matchesEpisode = (torrent: EztvTorrent, season?: number, episode?: number)
 const buildBehaviorHints = (torrent: EztvTorrent): Stream["behaviorHints"] | undefined => {
   const hints: Stream["behaviorHints"] = {};
   if (typeof torrent.size_bytes === "number" && torrent.size_bytes > 0) {
-    hints.videoSize = torrent.size_bytes;
+    // hints.videoSize = torrent.size_bytes;
   }
   if (torrent.filename) {
     hints.filename = torrent.filename;

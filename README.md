@@ -1,4 +1,4 @@
-# lazy-torrentio
+# barestreams
 
 Minimal Stremio addon that serves torrent stream results with Redis-backed caching. It does not crawl ahead of time; it fetches and parses sources only when a user requests a stream. It aggregates results from multiple public torrent sources, normalizes them into Stremio stream responses.
 

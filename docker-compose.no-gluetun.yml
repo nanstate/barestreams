@@ -7,7 +7,7 @@ services:
     environment:
       - LOG_LEVEL=info
 
-  lazy-torrentio:
+  barestreams:
     build: .
     depends_on:
       - redis

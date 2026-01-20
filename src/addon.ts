@@ -15,10 +15,10 @@ import { BadRequestError, type Stream, type StreamResponse } from "./types.js";
 export const CACHE_TTL_SECONDS = 604800;
 
 export const manifest = {
-  id: "lazy.torrentio",
+  id: "barestreams",
   version: "1.0.0",
-  name: "lazy-torrentio",
-  description: "On-demand streams addon",
+  name: "barestreams",
+  description: "Lightweight Stremio addon for torrent streams from multiple public sources.",
   resources: ["stream"],
   types: ["movie", "series"],
   idPrefixes: ["tt"],
@@ -102,7 +102,7 @@ const applyBingeGroup = (stream: Stream, parsed: ParsedStremioId, type: string):
   }
   const quality = extractStreamQuality(stream) ?? "unknown";
   const source = normalizeBingeSegment(extractSourceFromDescription(stream.description) ?? "stream");
-  const bingeGroup = `lazy-torrentio-${source}-${quality}`;
+  const bingeGroup = `barestreams-${source}-${quality}`;
   return {
     ...stream,
     behaviorHints: {

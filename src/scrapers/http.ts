@@ -1,4 +1,6 @@
 const DEFAULT_TIMEOUT_MS = 30_000;
+const USER_AGENT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 const flareSolverrUrl = process.env.FLARESOLVERR_URL ?? "http://localhost:8191";
 const flareSolverrSessions: string[] = [];
 let flareSolverrSessionIndex = 0;
@@ -26,7 +28,7 @@ const fetchWithTimeout = async (url: string, timeoutMs = DEFAULT_TIMEOUT_MS): Pr
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
-      headers: { "User-Agent": "lazy-torrentio" },
+      headers: { "User-Agent": USER_AGENT },
       signal: controller.signal
     });
     if (!response.ok) {

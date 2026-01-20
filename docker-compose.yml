@@ -31,7 +31,7 @@ services:
       - LOG_LEVEL=info
     network_mode: "service:gluetun"
 
-  lazy-torrentio:
+  barestreams:
     build: .
     depends_on:
       gluetun:

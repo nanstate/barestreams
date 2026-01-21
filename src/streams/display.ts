@@ -32,7 +32,7 @@ const buildTitlePattern = (title: string): RegExp | null => {
 };
 
 const buildTorrentSlug = (
-	torrentName?: string,
+	torrentName: string | undefined,
 	imdbTitle: string,
 ): string | null => {
 	if (!torrentName) {

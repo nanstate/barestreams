@@ -70,6 +70,7 @@ describe("scraper query helpers", () => {
 		await expect(buildQueries(parsed)).resolves.toEqual({
 			baseTitle: "My Show",
 			query: "My Show S01E02",
+			fallbackQuery: "My Show",
 			episodeSuffix: "S01E02",
 		});
 	});
@@ -88,6 +89,7 @@ describe("scraper query helpers", () => {
 		await expect(buildQueries(parsed)).resolves.toEqual({
 			baseTitle: "A Movie",
 			query: "A Movie",
+			fallbackQuery: null,
 			episodeSuffix: null,
 		});
 	});

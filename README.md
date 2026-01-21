@@ -45,15 +45,15 @@ docker compose -f docker-compose.test.yml up --abort-on-container-exit --build
 
 ## Supported scrapers
 
-Set a scraper URL list to an empty string to disable it (e.g. `EZTV_URL=""`).
+Remove a scraper URL env var to disable it (for example, omit `EZTV_URL`).
 
-| Scraper | Env var | Requires FlareSolverr |
-| --- | --- | --- |
-| EZTV | `EZTV_URL` | No |
-| YTS | `YTS_URL` | No |
-| TorrentGalaxy | `TGX_URL` | No |
-| The Pirate Bay (ApiBay) | `APIBAY_URL` | No |
-| 1337x | `X1337X_URL` | Yes |
+| Scraper | Env var | Content | Requires FlareSolverr |
+| --- | --- | --- | --- |
+| EZTV | `EZTV_URL` | Series | No |
+| YTS | `YTS_URL` | Movies | No |
+| TorrentGalaxy | `TGX_URL` | Movies, Series | No |
+| The Pirate Bay (ApiBay) | `APIBAY_URL` | Movies, Series | No |
+| 1337x | `X1337X_URL` | Movies, Series | Yes |
 
 If you keep `gluetun` enabled, copy `.env.example` to `.env` and fill in entries such as:
 

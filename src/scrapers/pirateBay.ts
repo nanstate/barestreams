@@ -27,9 +27,7 @@ type PirateBayApiResult = {
 const MOVIE_CATEGORIES = [207, 201];
 const SERIES_CATEGORIES = [208, 205];
 
-const API_BASE_FALLBACK = "https://apibay.org";
-
-const resolveApiBase = (baseUrl: string): string => {
+const resolveApiBase = (baseUrl: string): string | null => {
 	const normalized = normalizeBaseUrl(baseUrl);
 	try {
 		const url = new URL(normalized);
@@ -37,9 +35,9 @@ const resolveApiBase = (baseUrl: string): string => {
 			return normalized;
 		}
 	} catch {
-		// Fall through to default API base.
+		return null;
 	}
-	return API_BASE_FALLBACK;
+	return normalized;
 };
 
 const buildSearchUrl = (
@@ -130,6 +128,9 @@ export const scrapePirateBayStreams = async (
 	parsed: ParsedStremioId,
 	type: "movie" | "series",
 ): Promise<StreamResponse> => {
+	if (config.pirateBayUrls.length === 0) {
+		return { streams: [] };
+	}
 	const { baseTitle, query, fallbackQuery, episodeSuffix } =
 		await buildQueries(parsed);
 	const categories = type === "movie" ? MOVIE_CATEGORIES : SERIES_CATEGORIES;
@@ -145,6 +146,9 @@ export const scrapePirateBayStreams = async (
 		const responses = await Promise.allSettled(
 			tasks.map(({ baseUrl, category }) => {
 				const apiBase = resolveApiBase(baseUrl);
+				if (!apiBase) {
+					return Promise.resolve(null);
+				}
 				return fetchJson<PirateBayApiResult[]>(
 					buildSearchUrl(apiBase, searchQuery, category),
 				);

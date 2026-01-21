@@ -54,6 +54,9 @@ const buildBehaviorHints = (
 export const scrapeYtsStreams = async (
 	parsed: ParsedStremioId,
 ): Promise<StreamResponse> => {
+	if (config.ytsUrls.length === 0) {
+		return { streams: [] };
+	}
 	const imdbId = parsed.baseId;
 	const responses = await Promise.allSettled(
 		config.ytsUrls.map((baseUrl) =>

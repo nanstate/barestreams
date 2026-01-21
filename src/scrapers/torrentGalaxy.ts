@@ -188,6 +188,9 @@ const sortBySeedersDesc = (
 export const scrapeTorrentGalaxyStreams = async (
 	parsed: ParsedStremioId,
 ): Promise<StreamResponse> => {
+	if (config.tgxUrls.length === 0) {
+		return { streams: [] };
+	}
 	const { baseTitle, query, fallbackQuery, episodeSuffix } =
 		await buildQueries(parsed);
 	const links: TorrentGalaxyLink[] = [];

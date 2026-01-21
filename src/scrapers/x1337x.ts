@@ -191,6 +191,9 @@ export const scrapeX1337xStreams = async (
 ): Promise<StreamResponse> => {
 	const baseUrls = config.x1337xUrls;
 	const detailLimit = config.flareSolverrSessions;
+	if (baseUrls.length === 0 || detailLimit <= 0) {
+		return { streams: [] };
+	}
 	const { baseTitle, query, fallbackQuery, episodeSuffix } =
 		await buildQueries(parsed);
 	const searchLimit = Math.max(1, detailLimit);

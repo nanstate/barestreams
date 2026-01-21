@@ -376,6 +376,9 @@ const sortBySeedsDesc = (a: EztvTorrent, b: EztvTorrent): number => {
 export const scrapeEztvStreams = async (
 	parsed: ParsedStremioId,
 ): Promise<StreamResponse> => {
+	if (config.eztvUrls.length === 0) {
+		return { streams: [] };
+	}
 	const imdbDigits = getImdbDigits(parsed.baseId);
 	const basics = await getTitleBasics(parsed.baseId);
 	const titleCandidates = [basics?.primaryTitle, basics?.originalTitle]

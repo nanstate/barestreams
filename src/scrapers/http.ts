@@ -1,7 +1,9 @@
+import { config } from "../config.js";
+
 const DEFAULT_TIMEOUT_MS = 30_000;
 const USER_AGENT =
-	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
-const flareSolverrUrl = process.env.FLARESOLVERR_URL ?? "http://localhost:8191";
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36";
+let flareSolverrUrl: string | null = null;
 const flareSolverrSessions: string[] = [];
 let flareSolverrSessionIndex = 0;
 let flareSolverrSessionInitAttempted = false;
@@ -167,15 +169,12 @@ const getNextFlareSolverrSession = (): string | undefined => {
 
 const refreshFlareSolverrSessions = async (options: {
 	timeoutMs: number;
-	warmupUrl?: string;
+	warmupUrl: string;
 }): Promise<void> => {
 	if (flareSolverrRefreshInFlight || flareSolverrSessions.length === 0) {
 		return;
 	}
 	const warmupUrl = options.warmupUrl;
-	if (!warmupUrl) {
-		return;
-	}
 	flareSolverrRefreshInFlight = true;
 	try {
 		for (let index = 0; index < flareSolverrSessions.length; index += 1) {
@@ -208,21 +207,22 @@ const refreshFlareSolverrSessions = async (options: {
 	}
 };
 
-export const initFlareSolverrSessions = async (options?: {
-	count?: number;
-	prefix?: string;
-	timeoutMs?: number;
-	warmupUrls?: string[];
-	refreshIntervalMs?: number;
-}): Promise<void> => {
-	if (!flareSolverrUrl || flareSolverrSessionInitAttempted) {
+export const initFlareSolverrSessions = async (): Promise<void> => {
+	if (flareSolverrSessionInitAttempted) {
+		return;
+	}
+	flareSolverrUrl = config.flareSolverrUrl;
+	if (!flareSolverrUrl) {
 		return;
 	}
 	flareSolverrSessionInitAttempted = true;
-	const count = options?.count ?? 5;
-	const prefix = options?.prefix ?? "lazy-1337x";
-	const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-	const warmupUrl = options?.warmupUrls?.[0];
+	const count = config.flareSolverrSessions;
+	const prefix = "fs-1337x";
+	const timeoutMs = DEFAULT_TIMEOUT_MS;
+	const warmupUrl = config.x1337xUrls[0];
+	if (!warmupUrl) {
+		throw new Error("FlareSolverr warmup URL required.");
+	}
 	const sessions = Array.from(
 		{ length: count },
 		(_, index) => `${prefix}-${index + 1}`,
@@ -237,17 +237,17 @@ export const initFlareSolverrSessions = async (options?: {
 			flareSolverrSessions.push(session);
 		}
 	}
-	if (warmupUrl && flareSolverrSessions.length > 0) {
+	if (flareSolverrSessions.length > 0) {
 		await Promise.all(
 			flareSolverrSessions.map((session) =>
 				fetchTextViaFlareSolverr(warmupUrl, timeoutMs, session),
 			),
 		);
 	}
-	if (warmupUrl && (options?.refreshIntervalMs ?? 0) > 0) {
+	if (config.flareSolverrSessionRefreshMs > 0) {
 		flareSolverrRefreshTimer = setInterval(() => {
 			void refreshFlareSolverrSessions({ timeoutMs, warmupUrl });
-		}, options?.refreshIntervalMs ?? 0);
+		}, config.flareSolverrSessionRefreshMs);
 	}
 };
 
@@ -256,7 +256,7 @@ export const fetchJson = async <T>(
 	options?: FetchOptions,
 ): Promise<T | null> => {
 	const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-	if (options?.useFlareSolverr) {
+	if (options?.useFlareSolverr && flareSolverrUrl) {
 		const session = options.useFlareSolverrSessionPool
 			? getNextFlareSolverrSession()
 			: undefined;
@@ -286,7 +286,7 @@ export const fetchText = async (
 	options?: FetchOptions,
 ): Promise<string | null> => {
 	const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-	if (options?.useFlareSolverr) {
+	if (options?.useFlareSolverr && flareSolverrUrl) {
 		const session = options.useFlareSolverrSessionPool
 			? getNextFlareSolverrSession()
 			: undefined;

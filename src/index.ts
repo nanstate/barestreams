@@ -1,7 +1,7 @@
 import * as http from "node:http";
 import { createAddonInterface } from "./addon.js";
 import { initRedis } from "./cache/redis.js";
-import { loadConfig } from "./config.js";
+import { config } from "./config.js";
 import { ensureImdbDatasets } from "./imdb/index.js";
 import { initFlareSolverrSessions } from "./scrapers/http.js";
 import { BadRequestError } from "./types.js";
@@ -23,20 +23,19 @@ const sendJson = (
 };
 
 const start = async (): Promise<void> => {
-	const config = loadConfig();
 	try {
-		await initRedis(config.redisUrl);
+		const redisClient = await initRedis();
+		if (!redisClient) {
+			console.info("No Redis URL configured, continuing without cache");
+		}
 	} catch {
-		console.warn("Redis unavailable, continuing without cache");
+		console.info("Redis unavailable, continuing without cache");
 	}
-	await initFlareSolverrSessions({
-		count: config.flareSolverrSessions,
-		prefix: "lazy-1337x",
-		warmupUrls: config.x1337xUrls,
-		refreshIntervalMs: config.flareSolverrSessionRefreshMs,
-	});
+	if (config.flareSolverrSessions > 0 && config.x1337xUrls.length > 0) {
+		await initFlareSolverrSessions();
+	}
 	await ensureImdbDatasets();
-	const addonInterface = createAddonInterface(config);
+	const addonInterface = createAddonInterface();
 
 	const server = http.createServer(async (req, res) => {
 		if (!req.url) {

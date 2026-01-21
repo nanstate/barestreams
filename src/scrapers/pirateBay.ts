@@ -2,6 +2,7 @@ import type { ParsedStremioId } from "../parsing/stremioId.js";
 import { parseMagnet } from "../parsing/magnet.js";
 import { extractQualityHint } from "../streams/quality.js";
 import { formatStreamDisplay } from "../streams/display.js";
+import { config } from "../config.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { fetchJson, normalizeBaseUrl } from "./http.js";
 import { buildQueries, matchesEpisode } from "./query.js";
@@ -51,14 +52,14 @@ const buildSearchUrl = (
 	return `${normalized}/q.php?${params.toString()}`;
 };
 
-const parseSizeToBytes = (rawSize?: string | number): number | null => {
+const parseSizeToBytes = (rawSize?: string | number): number | undefined => {
 	if (rawSize === undefined || rawSize === null) {
-		return null;
+		return undefined;
 	}
 	const value =
 		typeof rawSize === "string" ? Number.parseFloat(rawSize) : rawSize;
 	if (!Number.isFinite(value)) {
-		return null;
+		return undefined;
 	}
 	return Math.round(value);
 };
@@ -103,7 +104,7 @@ const parseSearchResults = (
 		results.push({
 			title,
 			magnet,
-			sizeBytes: sizeBytes ?? undefined,
+			sizeBytes,
 			seeders: Number.isFinite(seeders) ? seeders : 0,
 			leechers: Number.isFinite(leechers) ? leechers : 0,
 		});
@@ -127,7 +128,6 @@ const dedupeResults = (results: PirateBayResult[]): PirateBayResult[] => {
 
 export const scrapePirateBayStreams = async (
 	parsed: ParsedStremioId,
-	pirateBayUrls: string[],
 	type: "movie" | "series",
 ): Promise<StreamResponse> => {
 	const { baseTitle, query, fallbackQuery, episodeSuffix } =
@@ -136,7 +136,7 @@ export const scrapePirateBayStreams = async (
 	const fetchResultsForQuery = async (
 		searchQuery: string,
 	): Promise<PirateBayResult[]> => {
-		const tasks = pirateBayUrls.flatMap((baseUrl) =>
+		const tasks = config.pirateBayUrls.flatMap((baseUrl) =>
 			categories.map((category) => ({
 				baseUrl,
 				category,

@@ -1,5 +1,5 @@
 export type AppConfig = {
-	redisUrl: string;
+	redisUrl: string | null;
 	eztvUrls: string[];
 	ytsUrls: string[];
 	tgxUrls: string[];
@@ -7,6 +7,7 @@ export type AppConfig = {
 	x1337xUrls: string[];
 	flareSolverrSessions: number;
 	flareSolverrSessionRefreshMs: number;
+	flareSolverrUrl: string | null;
 };
 
 const parseUrls = (raw: string): string[] =>
@@ -59,7 +60,11 @@ export const loadConfig = (): AppConfig => {
 		Number.parseInt(flareSolverrRefreshRaw, 10) || 0,
 	);
 
-	const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
+	const flareSolverrUrlRaw = process.env.FLARESOLVERR_URL?.trim() ?? "";
+	const flareSolverrUrl = flareSolverrUrlRaw ? flareSolverrUrlRaw : null;
+
+	const redisUrlRaw = process.env.REDIS_URL?.trim() ?? "";
+	const redisUrl = redisUrlRaw ? redisUrlRaw : null;
 
 	return {
 		redisUrl,
@@ -70,5 +75,8 @@ export const loadConfig = (): AppConfig => {
 		x1337xUrls,
 		flareSolverrSessions,
 		flareSolverrSessionRefreshMs,
+		flareSolverrUrl,
 	};
 };
+
+export const config: AppConfig = loadConfig();

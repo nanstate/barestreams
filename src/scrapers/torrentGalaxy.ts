@@ -3,6 +3,7 @@ import type { ParsedStremioId } from "../parsing/stremioId.js";
 import { parseMagnet } from "../parsing/magnet.js";
 import { extractQualityHint } from "../streams/quality.js";
 import { formatStreamDisplay } from "../streams/display.js";
+import { config } from "../config.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { fetchText, normalizeBaseUrl } from "./http.js";
 import { buildQueries, matchesEpisode } from "./query.js";
@@ -107,7 +108,7 @@ const fetchTorrentDetails = async (
 		return null;
 	}
 	const $ = load(html);
-	const magnetURI = $("a[href^='magnet:?']").attr("href") ?? undefined;
+	const magnetURI = $("a[href^='magnet:?']").attr("href");
 	const torrentDownload = $("a[href$='.torrent']").attr("href");
 	const resolvedDownload = torrentDownload
 		? new URL(torrentDownload, url).toString()
@@ -186,13 +187,12 @@ const sortBySeedersDesc = (
 
 export const scrapeTorrentGalaxyStreams = async (
 	parsed: ParsedStremioId,
-	tgxUrls: string[],
 ): Promise<StreamResponse> => {
 	const { baseTitle, query, fallbackQuery, episodeSuffix } =
 		await buildQueries(parsed);
 	const links: TorrentGalaxyLink[] = [];
 
-	for (const baseUrl of tgxUrls) {
+	for (const baseUrl of config.tgxUrls) {
 		if (links.length >= 20) {
 			break;
 		}
@@ -206,7 +206,7 @@ export const scrapeTorrentGalaxyStreams = async (
 
 	let filteredLinks = links;
 	if (links.length === 0 && fallbackQuery) {
-		for (const baseUrl of tgxUrls) {
+		for (const baseUrl of config.tgxUrls) {
 			if (filteredLinks.length >= 20) {
 				break;
 			}
@@ -249,7 +249,7 @@ export const scrapeTorrentGalaxyStreams = async (
 			if (!parsedMagnet) {
 				return null;
 			}
-			const quality = extractQualityHint(link.name ?? "");
+			const quality = extractQualityHint(link.name);
 			const sizeBytes = link.size ? parseSizeToBytes(link.size) : null;
 			const display = formatStreamDisplay({
 				imdbTitle: baseTitle,

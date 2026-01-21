@@ -66,7 +66,7 @@ describe("addon end-to-end", () => {
 	beforeAll(async () => {
 		await initFlareSolverrSessions({
 			count: testConfig?.flareSolverrSessions,
-			prefix: "lazy-1337x",
+			prefix: "fs-1337x",
 			warmupUrls: testConfig?.x1337xUrls,
 		});
 	}, 60000);

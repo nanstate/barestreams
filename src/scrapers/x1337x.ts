@@ -3,6 +3,7 @@ import type { ParsedStremioId } from "../parsing/stremioId.js";
 import { parseMagnet } from "../parsing/magnet.js";
 import { extractQualityHint } from "../streams/quality.js";
 import { formatStreamDisplay } from "../streams/display.js";
+import { config } from "../config.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { fetchText, normalizeBaseUrl } from "./http.js";
 import { buildQueries, matchesEpisode } from "./query.js";
@@ -114,8 +115,7 @@ const fetchTorrentDetails = async (
 	const $ = load(html);
 	const magnetURI =
 		$("a[href^='magnet:?']").attr("href") ??
-		$("a[href^='magnet:']").attr("href") ??
-		undefined;
+		$("a[href^='magnet:']").attr("href");
 	return { magnetURI };
 };
 
@@ -188,9 +188,9 @@ const sortBySeedersDesc = (a: X1337xLink, b: X1337xLink): number =>
 
 export const scrapeX1337xStreams = async (
 	parsed: ParsedStremioId,
-	baseUrls: string[],
-	detailLimit = 10,
 ): Promise<StreamResponse> => {
+	const baseUrls = config.x1337xUrls;
+	const detailLimit = config.flareSolverrSessions;
 	const { baseTitle, query, fallbackQuery, episodeSuffix } =
 		await buildQueries(parsed);
 	const searchLimit = Math.max(1, detailLimit);
@@ -250,7 +250,7 @@ export const scrapeX1337xStreams = async (
 			if (!parsedMagnet) {
 				return null;
 			}
-			const quality = extractQualityHint(link.name ?? "");
+			const quality = extractQualityHint(link.name);
 			const sizeBytes = link.size ? parseSizeToBytes(link.size) : null;
 			const display = formatStreamDisplay({
 				imdbTitle: baseTitle,

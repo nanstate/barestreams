@@ -1,5 +1,6 @@
 import type { ParsedStremioId } from "../parsing/stremioId.js";
 import { formatStreamDisplay } from "../streams/display.js";
+import { config } from "../config.js";
 import { fetchJson, normalizeBaseUrl } from "./http.js";
 import type { Stream, StreamResponse } from "../types.js";
 
@@ -52,11 +53,10 @@ const buildBehaviorHints = (
 
 export const scrapeYtsStreams = async (
 	parsed: ParsedStremioId,
-	ytsUrls: string[],
 ): Promise<StreamResponse> => {
 	const imdbId = parsed.baseId;
 	const responses = await Promise.allSettled(
-		ytsUrls.map((baseUrl) =>
+		config.ytsUrls.map((baseUrl) =>
 			fetchJson<YtsResponse>(buildListUrl(baseUrl, imdbId)),
 		),
 	);
@@ -85,7 +85,7 @@ export const scrapeYtsStreams = async (
 				return null;
 			}
 			seen.add(key);
-			const imdbTitle = movie.title_long || movie.title || "YTS";
+			const imdbTitle = movie.title_long || movie.title;
 			const torrentName =
 				`${imdbTitle} ${torrent.quality} ${torrent.type}`.trim();
 			const qualityLabel = [torrent.quality, torrent.type]

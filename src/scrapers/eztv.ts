@@ -3,6 +3,7 @@ import { parseMagnet } from "../parsing/magnet.js";
 import type { ParsedStremioId } from "../parsing/stremioId.js";
 import { formatStreamDisplay } from "../streams/display.js";
 import { extractQualityHint } from "../streams/quality.js";
+import { config } from "../config.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { fetchJson, fetchText, normalizeBaseUrl } from "./http.js";
 import { formatEpisodeSuffix, parseEpisodeFromText } from "./query.js";
@@ -374,7 +375,6 @@ const sortBySeedsDesc = (a: EztvTorrent, b: EztvTorrent): number => {
 
 export const scrapeEztvStreams = async (
 	parsed: ParsedStremioId,
-	eztvUrls: string[],
 ): Promise<StreamResponse> => {
 	const imdbDigits = getImdbDigits(parsed.baseId);
 	const basics = await getTitleBasics(parsed.baseId);
@@ -384,7 +384,7 @@ export const scrapeEztvStreams = async (
 		.filter((title, index, all) => all.indexOf(title) === index);
 
 	const responses = await Promise.allSettled(
-		eztvUrls.flatMap((baseUrl) => {
+		config.eztvUrls.flatMap((baseUrl) => {
 			const imdbIds = [imdbDigits, `tt${imdbDigits}`];
 			return imdbIds.map((imdbId) => fetchAllTorrents(baseUrl, imdbId));
 		}),
@@ -466,7 +466,7 @@ export const scrapeEztvStreams = async (
 			const imdbTitle =
 				basics?.primaryTitle || basics?.originalTitle || baseTitle;
 			const fallbackResults = await Promise.allSettled(
-				eztvUrls.map((baseUrl) =>
+				config.eztvUrls.map((baseUrl) =>
 					scrapeSearchStreams(baseUrl, query, titleCandidates, {
 						imdbTitle,
 						season: parsed.season,

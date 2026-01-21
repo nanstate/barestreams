@@ -33,17 +33,15 @@ const buildTitlePattern = (title: string): RegExp | null => {
 
 const buildTorrentSlug = (
 	torrentName?: string,
-	imdbTitle?: string,
+	imdbTitle: string,
 ): string | null => {
 	if (!torrentName) {
 		return null;
 	}
 	let stripped = torrentName;
-	if (imdbTitle) {
-		const pattern = buildTitlePattern(imdbTitle);
-		if (pattern) {
-			stripped = stripped.replace(pattern, "");
-		}
+	const pattern = buildTitlePattern(imdbTitle);
+	if (pattern) {
+		stripped = stripped.replace(pattern, "");
 	}
 	stripped = stripped.replace(/\bS\d{1,2}E\d{1,2}\b/i, "");
 	const cleaned = stripped
@@ -116,7 +114,7 @@ export const formatStreamDisplay = (
 	title: string;
 	description?: string;
 } => {
-	const imdbTitle = options.imdbTitle?.trim() || "Unknown title";
+	const imdbTitle = options.imdbTitle.trim();
 	const qualityLabel = formatQualityLabel(resolveQuality(options));
 	const title = `Watch ${qualityLabel}`;
 	const name = title;

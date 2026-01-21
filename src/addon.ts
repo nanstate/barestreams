@@ -1,7 +1,6 @@
 import type { StreamHandlerArgs } from "stremio-addon-sdk";
 import { addonBuilder } from "stremio-addon-sdk";
 import { getCache, setCache } from "./cache/redis.js";
-import type { AppConfig } from "./config.js";
 import { getTitleBasics } from "./imdb/index.js";
 import { parseStremioId, type ParsedStremioId } from "./parsing/stremioId.js";
 import { scrapeEztvStreams } from "./scrapers/eztv.js";
@@ -11,8 +10,6 @@ import { scrapeX1337xStreams } from "./scrapers/x1337x.js";
 import { scrapeYtsStreams } from "./scrapers/yts.js";
 import { extractQualityHint } from "./streams/quality.js";
 import { BadRequestError, type Stream, type StreamResponse } from "./types.js";
-
-export const CACHE_TTL_SECONDS = 604800;
 
 export const manifest = {
 	id: "barestreams",
@@ -161,7 +158,7 @@ const logStreamRequest = (params: {
 	console.info(`[stream] ${JSON.stringify(payload)}`);
 };
 
-export const createAddonInterface = (config: AppConfig) => {
+export const createAddonInterface = () => {
 	const builder = new addonBuilder(manifest);
 
 	builder.defineStreamHandler(async ({ type, id }: StreamHandlerArgs) => {
@@ -194,32 +191,16 @@ export const createAddonInterface = (config: AppConfig) => {
 		const responses = await Promise.allSettled(
 			type === "movie"
 				? [
-						scrapeYtsStreams(parsed, config.ytsUrls),
-						scrapeTorrentGalaxyStreams(parsed, config.tgxUrls),
-						scrapePirateBayStreams(
-							parsed,
-							config.pirateBayUrls,
-							"movie",
-						),
-						scrapeX1337xStreams(
-							parsed,
-							config.x1337xUrls,
-							config.flareSolverrSessions,
-						),
+						scrapeYtsStreams(parsed),
+						scrapeTorrentGalaxyStreams(parsed),
+						scrapePirateBayStreams(parsed, "movie"),
+						scrapeX1337xStreams(parsed),
 					]
 				: [
-						scrapeEztvStreams(parsed, config.eztvUrls),
-						scrapeTorrentGalaxyStreams(parsed, config.tgxUrls),
-						scrapePirateBayStreams(
-							parsed,
-							config.pirateBayUrls,
-							"series",
-						),
-						scrapeX1337xStreams(
-							parsed,
-							config.x1337xUrls,
-							config.flareSolverrSessions,
-						),
+						scrapeEztvStreams(parsed),
+						scrapeTorrentGalaxyStreams(parsed),
+						scrapePirateBayStreams(parsed, "series"),
+						scrapeX1337xStreams(parsed),
 					],
 		);
 
@@ -260,7 +241,7 @@ export const createAddonInterface = (config: AppConfig) => {
 				stripStreamExtras(applyBingeGroup(stream, parsed, type)),
 			),
 		};
-		await setCache(key, JSON.stringify(response), CACHE_TTL_SECONDS);
+		await setCache(key, JSON.stringify(response));
 		const durationMs =
 			Number(process.hrtime.bigint() - startedAt) / 1_000_000;
 		logStreamRequest({

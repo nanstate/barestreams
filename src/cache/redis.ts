@@ -1,19 +1,20 @@
 import { createClient, type RedisClientType } from "redis";
+import { config } from "../config.js";
+
+const CACHE_TTL_SECONDS = 86400; // 24 hours
 
 let client: RedisClientType | null = null;
 
-export const initRedis = async (
-	redisUrl?: string,
-): Promise<RedisClientType | null> => {
-	if (!redisUrl) {
-		return null;
-	}
-
+export const initRedis = async (): Promise<RedisClientType | null> => {
 	if (client) {
 		return client;
 	}
 
-	client = createClient({ url: redisUrl });
+	if (!config.redisUrl) {
+		return null;
+	}
+
+	client = createClient({ url: config.redisUrl });
 	client.on("error", (err) => {
 		console.error("Redis error:", err);
 	});
@@ -41,11 +42,10 @@ export const getCache = async (key: string): Promise<string | null> => {
 export const setCache = async (
 	key: string,
 	value: string,
-	ttlSeconds: number,
 ): Promise<void> => {
 	if (!client) {
 		return;
 	}
 
-	await client.set(key, value, { EX: ttlSeconds });
+	await client.set(key, value, { EX: CACHE_TTL_SECONDS });
 };

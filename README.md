@@ -38,7 +38,7 @@ docker compose -f docker-compose.test.yml up --abort-on-container-exit --build
 - `EZTV_URL`: Comma-separated list of EZTV base URLs to try in order.
 - `YTS_URL`: Comma-separated list of YTS base URLs to try in order.
 - `TGX_URL`: Comma-separated list of TorrentGalaxy base URLs to try in order.
-- `PIRATEBAY_URL`: Comma-separated list of Pirate Bay base URLs to try in order.
+- `APIBAY_URL`: Comma-separated list of ApiBay base URLs to try in order.
 - `X1337X_URL`: Comma-separated list of 1337x base URLs to try in order.
 - `FLARESOLVERR_URL`: FlareSolverr base URL (optional).
 - `FLARESOLVERR_SESSIONS`: Number of FlareSolverr sessions to keep (optional).
@@ -52,7 +52,7 @@ Set a scraper URL list to an empty string to disable it (e.g. `EZTV_URL=""`).
 | EZTV | `EZTV_URL` | No |
 | YTS | `YTS_URL` | No |
 | TorrentGalaxy | `TGX_URL` | No |
-| Pirate Bay | `PIRATEBAY_URL` | No |
+| The Pirate Bay (ApiBay) | `APIBAY_URL` | No |
 | 1337x | `X1337X_URL` | Yes |
 
 If you keep `gluetun` enabled, copy `.env.example` to `.env` and fill in entries such as:

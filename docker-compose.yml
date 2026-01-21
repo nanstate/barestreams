@@ -49,7 +49,7 @@ services:
       - EZTV_URL=https://eztv.re
       - YTS_URL=https://yts.lt
       - TGX_URL=https://torrentgalaxy.hair
-      - PIRATEBAY_URL=https://thepiratebay.org
+      - APIBAY_URL=https://apibay.org
       - X1337X_URL=https://1337x.to
       - FLARESOLVERR_SESSIONS=10
       - FLARESOLVERR_URL=http://localhost:8191

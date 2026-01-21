@@ -128,7 +128,7 @@ export const scrapePirateBayStreams = async (
 	parsed: ParsedStremioId,
 	type: "movie" | "series",
 ): Promise<StreamResponse> => {
-	if (config.pirateBayUrls.length === 0) {
+	if (config.apiBayUrls.length === 0) {
 		return { streams: [] };
 	}
 	const { baseTitle, query, fallbackQuery, episodeSuffix } =
@@ -137,7 +137,7 @@ export const scrapePirateBayStreams = async (
 	const fetchResultsForQuery = async (
 		searchQuery: string,
 	): Promise<PirateBayResult[]> => {
-		const tasks = config.pirateBayUrls.flatMap((baseUrl) =>
+		const tasks = config.apiBayUrls.flatMap((baseUrl) =>
 			categories.map((category) => ({
 				baseUrl,
 				category,

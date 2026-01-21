@@ -3,7 +3,7 @@ export type AppConfig = {
 	eztvUrls: string[];
 	ytsUrls: string[];
 	tgxUrls: string[];
-	pirateBayUrls: string[];
+	apiBayUrls: string[];
 	x1337xUrls: string[];
 	flareSolverrSessions: number;
 	flareSolverrSessionRefreshMs: number;
@@ -26,8 +26,8 @@ export const loadConfig = (): AppConfig => {
 	const tgxRaw = process.env.TGX_URL || "";
 	const tgxUrls = parseUrls(tgxRaw);
 
-	const pirateBayRaw = process.env.PIRATEBAY_URL ?? "";
-	const pirateBayUrls = parseUrls(pirateBayRaw);
+	const apiBayRaw = process.env.APIBAY_URL ?? "";
+	const apiBayUrls = parseUrls(apiBayRaw);
 
 	const x1337xRaw = process.env.X1337X_URL ?? "";
 	const x1337xUrls = parseUrls(x1337xRaw);
@@ -55,7 +55,7 @@ export const loadConfig = (): AppConfig => {
 		eztvUrls,
 		ytsUrls,
 		tgxUrls,
-		pirateBayUrls,
+		apiBayUrls,
 		x1337xUrls,
 		flareSolverrSessions,
 		flareSolverrSessionRefreshMs,

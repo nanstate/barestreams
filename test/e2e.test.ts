@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createAddonInterface } from "../src/addon.js";
-import type { AppConfig } from "../src/config.js";
+import { config } from "../src/config.js";
 import { initFlareSolverrSessions } from "../src/scrapers/http.js";
 
 vi.mock("../src/imdb/index.js", () => {
@@ -38,37 +38,17 @@ vi.mock("../src/imdb/index.js", () => {
 	};
 });
 
-const loadTestConfig = (): AppConfig | null => {
-	const ytsUrl = process.env.YTS_URL || "https://yts.lt";
-	const tgxUrl = process.env.TGX_URL || "https://torrentgalaxy.hair";
-	const eztvUrl = process.env.EZTV_URL || "https://eztv.re";
-	const pirateBayUrl =
-		process.env.PIRATEBAY_URL || "https://thepiratebay.org";
-	const x1337xUrl = process.env.X1337X_URL || "https://1337x.to";
-	const flareSolverrSessions =
-		Number.parseInt(process.env.FLARESOLVERR_SESSIONS || "10", 10) || 10;
-
-	return {
-		redisUrl: process.env.REDIS_URL ?? "",
-		ytsUrls: [ytsUrl],
-		tgxUrls: [tgxUrl],
-		eztvUrls: [eztvUrl],
-		pirateBayUrls: [pirateBayUrl],
-		x1337xUrls: [x1337xUrl],
-		flareSolverrSessions,
-	};
-};
-
-const testConfig = loadTestConfig();
-const itWithConfig = testConfig ? it : it.skip;
+const testConfig = config;
+const itWithConfig =
+	testConfig.ytsUrls.length > 0 &&
+	testConfig.tgxUrls.length > 0 &&
+	testConfig.eztvUrls.length > 0
+		? it
+		: it.skip;
 
 describe("addon end-to-end", () => {
 	beforeAll(async () => {
-		await initFlareSolverrSessions({
-			count: testConfig?.flareSolverrSessions,
-			prefix: "fs-1337x",
-			warmupUrls: testConfig?.x1337xUrls,
-		});
+		await initFlareSolverrSessions();
 	}, 60000);
 
 	afterEach(() => {
@@ -79,7 +59,7 @@ describe("addon end-to-end", () => {
 	itWithConfig(
 		"returns movie streams and caches results (tt10872600)",
 		async () => {
-			const addon = createAddonInterface(testConfig!);
+			const addon = createAddonInterface();
 			const result = await addon.get("stream", "movie", "tt10872600");
 
 			expect(result.streams.length).toBeGreaterThan(0);
@@ -94,7 +74,7 @@ describe("addon end-to-end", () => {
 				),
 			).toBe(true);
 
-			if (testConfig?.redisUrl) {
+			if (testConfig.redisUrl) {
 				const cached = await addon.get("stream", "movie", "tt10872600");
 				expect(cached.streams.length).toBe(result.streams.length);
 			}
@@ -105,7 +85,7 @@ describe("addon end-to-end", () => {
 	itWithConfig(
 		"returns series streams for S02E03 (tt5834204)",
 		async () => {
-			const addon = createAddonInterface(testConfig!);
+			const addon = createAddonInterface();
 			const result = await addon.get("stream", "series", "tt5834204:2:3");
 
 			expect(

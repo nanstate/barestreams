@@ -8,92 +8,98 @@ import { BadRequestError } from "./types.js";
 
 const PORT = 80;
 
-const sendJson = (res: http.ServerResponse, statusCode: number, body: unknown): void => {
-  const payload = JSON.stringify(body);
-  res.writeHead(statusCode, {
-    "Access-Control-Allow-Origin": "*",
-    "Content-Type": "application/json; charset=utf-8",
-    "Content-Length": Buffer.byteLength(payload)
-  });
-  res.end(payload);
+const sendJson = (
+	res: http.ServerResponse,
+	statusCode: number,
+	body: unknown,
+): void => {
+	const payload = JSON.stringify(body);
+	res.writeHead(statusCode, {
+		"Access-Control-Allow-Origin": "*",
+		"Content-Type": "application/json; charset=utf-8",
+		"Content-Length": Buffer.byteLength(payload),
+	});
+	res.end(payload);
 };
 
 const start = async (): Promise<void> => {
-  const config = loadConfig();
-  try {
-    await initRedis(config.redisUrl);
-  } catch {
-    console.warn("Redis unavailable, continuing without cache");
-  }
-  await initFlareSolverrSessions({
-    count: config.flareSolverrSessions,
-    prefix: "lazy-1337x",
-    warmupUrls: config.x1337xUrls
-  });
-  await ensureImdbDatasets();
-  const addonInterface = createAddonInterface(config);
+	const config = loadConfig();
+	try {
+		await initRedis(config.redisUrl);
+	} catch {
+		console.warn("Redis unavailable, continuing without cache");
+	}
+	await initFlareSolverrSessions({
+		count: config.flareSolverrSessions,
+		prefix: "lazy-1337x",
+		warmupUrls: config.x1337xUrls,
+	});
+	await ensureImdbDatasets();
+	const addonInterface = createAddonInterface(config);
 
-  const server = http.createServer(async (req, res) => {
-    if (!req.url) {
-      sendJson(res, 400, { error: "Bad request" });
-      return;
-    }
+	const server = http.createServer(async (req, res) => {
+		if (!req.url) {
+			sendJson(res, 400, { error: "Bad request" });
+			return;
+		}
 
-    if (req.method === "OPTIONS") {
-      res.writeHead(204, {
-        "Access-Control-Allow-Origin": "*",
-      });
-      res.end();
-      return;
-    }
+		if (req.method === "OPTIONS") {
+			res.writeHead(204, {
+				"Access-Control-Allow-Origin": "*",
+			});
+			res.end();
+			return;
+		}
 
-    if (req.method !== "GET") {
-      sendJson(res, 405, { error: "Method not allowed" });
-      return;
-    }
+		if (req.method !== "GET") {
+			sendJson(res, 405, { error: "Method not allowed" });
+			return;
+		}
 
-    const url = new URL(req.url, `http://localhost:${PORT}`);
-    const path = url.pathname;
+		const url = new URL(req.url, `http://localhost:${PORT}`);
+		const path = url.pathname;
 
-    if (path === "/manifest.json") {
-      console.info(`Manifest requested: ${req.method} ${path}`);
-      sendJson(res, 200, addonInterface.manifest);
-      return;
-    }
+		if (path === "/manifest.json") {
+			console.info(`Manifest requested: ${req.method} ${path}`);
+			sendJson(res, 200, addonInterface.manifest);
+			return;
+		}
 
-    if (path.startsWith("/stream/")) {
-      const parts = path.split("/").filter(Boolean);
-      if (parts.length !== 3 || !parts[2].endsWith(".json")) {
-        sendJson(res, 404, { error: "Not found" });
-        return;
-      }
+		if (path.startsWith("/stream/")) {
+			const parts = path.split("/").filter(Boolean);
+			if (parts.length !== 3 || !parts[2].endsWith(".json")) {
+				sendJson(res, 404, { error: "Not found" });
+				return;
+			}
 
-      const type = parts[1];
-      const id = parts[2].slice(0, -5);
+			const type = parts[1];
+			const id = parts[2].slice(0, -5);
 
-      try {
-        const result = await addonInterface.get("stream", type, id);
-        sendJson(res, 200, result);
-      } catch (err) {
-        if (err instanceof BadRequestError) {
-          sendJson(res, 400, { error: err.message });
-          return;
-        }
+			try {
+				const result = await addonInterface.get("stream", type, id);
+				sendJson(res, 200, result);
+			} catch (err) {
+				if (err instanceof BadRequestError) {
+					sendJson(res, 400, { error: err.message });
+					return;
+				}
 
-        console.error(err);
-        sendJson(res, 500, { error: "Internal server error" });
-      }
-      return;
-    }
+				console.error(err);
+				sendJson(res, 500, { error: "Internal server error" });
+			}
+			return;
+		}
 
-    sendJson(res, 404, { error: "Not found" });
-  });
+		sendJson(res, 404, { error: "Not found" });
+	});
 
-  server.listen(PORT);
-  console.info(`Manifest available at http://localhost:${PORT}/manifest.json`);
+	server.listen(PORT);
+	console.info(
+		`Manifest available at http://localhost:${PORT}/manifest.json`,
+	);
 };
 
 start().catch((err) => {
-  console.error(err instanceof Error ? err.message : err);
-  process.exit(1);
+	console.error(err instanceof Error ? err.message : err);
+	process.exit(1);
 });

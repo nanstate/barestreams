@@ -2,40 +2,40 @@ import { describe, expect, it } from "vitest";
 import { formatStreamDisplay } from "../src/streams/display.js";
 
 describe("formatStreamDisplay", () => {
-  it("formats series display text with slug, source, and info", () => {
-    const display = formatStreamDisplay({
-      imdbTitle: "The Handmaid's Tale",
-      season: 6,
-      episode: 7,
-      torrentName: "The.Handmaid's.Tale.S06E07.1080p.WEB.h264-ETHEL",
-      seeders: 231,
-      sizeLabel: "1.4 GB",
-      source: "EZTV"
-    });
+	it("formats series display text with slug, source, and info", () => {
+		const display = formatStreamDisplay({
+			imdbTitle: "The Handmaid's Tale",
+			season: 6,
+			episode: 7,
+			torrentName: "The.Handmaid's.Tale.S06E07.1080p.WEB.h264-ETHEL",
+			seeders: 231,
+			sizeLabel: "1.4 GB",
+			source: "EZTV",
+		});
 
-    console.log(display);
+		console.log(display);
 
-    expect(display.name).toBe("Watch 1080p");
-    expect(display.title).toBe("Watch 1080p");
-    expect(display.description).toBe(
-      "The Handmaid's Tale\nSeason 6 Episode 7\n1080p WEB h264-ETHEL\n🌱 231 • 💾 1.4 GB • 🔗 EZTV"
-    );
-  });
+		expect(display.name).toBe("Watch 1080p");
+		expect(display.title).toBe("Watch 1080p");
+		expect(display.description).toBe(
+			"The Handmaid's Tale\nSeason 6 Episode 7\n1080p WEB h264-ETHEL\n🌱 231 • 💾 1.4 GB • 🔗 EZTV",
+		);
+	});
 
-  it("defaults missing quality to 480p", () => {
-    const display = formatStreamDisplay({
-      imdbTitle: "Some Movie",
-      torrentName: "Some.Movie.WEB.x264-GROUP",
-      sizeLabel: "900 MB",
-      source: "TGX"
-    });
+	it("defaults missing quality to 480p", () => {
+		const display = formatStreamDisplay({
+			imdbTitle: "Some Movie",
+			torrentName: "Some.Movie.WEB.x264-GROUP",
+			sizeLabel: "900 MB",
+			source: "TGX",
+		});
 
-    console.log(display);
+		console.log(display);
 
-    expect(display.name).toBe("Watch 480p");
-    expect(display.title).toBe("Watch 480p");
-    expect(display.description).toBe(
-      "Some Movie\nWEB x264-GROUP\n🌱 0 • 💾 900 MB • 🔗 TGX"
-    );
-  });
+		expect(display.name).toBe("Watch 480p");
+		expect(display.title).toBe("Watch 480p");
+		expect(display.description).toBe(
+			"Some Movie\nWEB x264-GROUP\n🌱 0 • 💾 900 MB • 🔗 TGX",
+		);
+	});
 });

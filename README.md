@@ -58,8 +58,8 @@ Stremio requires HTTPS when accessing addons over the internet. The simplest app
 
 Example setup (replace `your.domain.example`):
 
-1) Create an A/AAAA DNS record pointing to your server.
-2) Install Nginx and Certbot, then request a certificate:
+1. Create an A/AAAA DNS record pointing to your server.
+2. Install Nginx and Certbot, then request a certificate:
 
 ```bash
 sudo apt-get update
@@ -67,7 +67,7 @@ sudo apt-get install -y nginx certbot python3-certbot-nginx
 sudo certbot --nginx -d your.domain.example
 ```
 
-3) Configure Nginx to proxy to the addon:
+3. Configure Nginx to proxy to the addon:
 
 ```nginx
 server {

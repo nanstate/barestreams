@@ -10,6 +10,10 @@ let flareSolverrSessionInitAttempted = false;
 let flareSolverrRefreshTimer: NodeJS.Timeout | null = null;
 let flareSolverrRefreshInFlight = false;
 
+const logFetchWarning = (url: string): void => {
+	console.warn(`[scraper] error response ${url}`);
+};
+
 type FetchOptions = {
 	timeoutMs?: number;
 	useFlareSolverr?: boolean;
@@ -262,21 +266,25 @@ export const fetchJson = async <T>(
 			: undefined;
 		const text = await fetchTextViaFlareSolverr(url, timeoutMs, session);
 		if (!text) {
+			logFetchWarning(url);
 			return null;
 		}
 		try {
 			return JSON.parse(text) as T;
 		} catch {
+			logFetchWarning(url);
 			return null;
 		}
 	}
 	const response = await fetchWithTimeout(url, timeoutMs);
 	if (!response) {
+		logFetchWarning(url);
 		return null;
 	}
 	try {
 		return (await response.json()) as T;
 	} catch {
+		logFetchWarning(url);
 		return null;
 	}
 };
@@ -290,15 +298,22 @@ export const fetchText = async (
 		const session = options.useFlareSolverrSessionPool
 			? getNextFlareSolverrSession()
 			: undefined;
-		return fetchTextViaFlareSolverr(url, timeoutMs, session);
+		const text = await fetchTextViaFlareSolverr(url, timeoutMs, session);
+		if (!text) {
+			logFetchWarning(url);
+			return null;
+		}
+		return text;
 	}
 	const response = await fetchWithTimeout(url, timeoutMs);
 	if (!response) {
+		logFetchWarning(url);
 		return null;
 	}
 	try {
 		return await response.text();
 	} catch {
+		logFetchWarning(url);
 		return null;
 	}
 };

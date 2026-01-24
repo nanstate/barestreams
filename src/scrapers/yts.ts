@@ -3,6 +3,7 @@ import { formatStreamDisplay } from "../streams/display.js";
 import { config } from "../config.js";
 import { fetchJson, normalizeBaseUrl } from "./http.js";
 import type { Stream, StreamResponse } from "../types.js";
+import { logScraperWarning } from "./logging.js";
 
 type YtsTorrent = {
 	hash: string;
@@ -115,6 +116,10 @@ export const scrapeYtsStreams = async (
 		.filter((stream): stream is NonNullable<typeof stream> =>
 			Boolean(stream),
 		);
+
+	if (streams.length === 0) {
+		logScraperWarning("YTS", "no results", { imdbId });
+	}
 
 	return { streams };
 };

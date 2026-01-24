@@ -5,6 +5,7 @@ import { formatStreamDisplay } from "../streams/display.js";
 import { config } from "../config.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { fetchJson, normalizeBaseUrl } from "./http.js";
+import { logScraperWarning } from "./logging.js";
 import { buildQueries, matchesEpisode } from "./query.js";
 
 type PirateBayResult = {
@@ -220,6 +221,15 @@ export const scrapePirateBayStreams = async (
 		.filter((stream): stream is NonNullable<typeof stream> =>
 			Boolean(stream),
 		);
+
+	if (streams.length === 0) {
+		logScraperWarning("PirateBay", "no results", {
+			type,
+			baseTitle,
+			query,
+			fallbackQuery,
+		});
+	}
 
 	return { streams };
 };

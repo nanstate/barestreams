@@ -1,11 +1,12 @@
+import { config } from "../config.js";
 import { getTitleBasics } from "../imdb/index.js";
 import { parseMagnet } from "../parsing/magnet.js";
 import type { ParsedStremioId } from "../parsing/stremioId.js";
 import { formatStreamDisplay } from "../streams/display.js";
 import { extractQualityHint } from "../streams/quality.js";
-import { config } from "../config.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { fetchJson, fetchText, normalizeBaseUrl } from "./http.js";
+import { logScraperWarning } from "./logging.js";
 import { formatEpisodeSuffix, parseEpisodeFromText } from "./query.js";
 
 type EztvTorrent = {
@@ -284,6 +285,7 @@ const scrapeSearchStreams = async (
 
 	const episodeLinks = extractEpisodeLinks(html, baseUrl, 15);
 	if (episodeLinks.length === 0) {
+		logScraperWarning("EZTV", "no results", { baseUrl, query });
 		return { streams: [] };
 	}
 
@@ -495,6 +497,14 @@ export const scrapeEztvStreams = async (
 
 	if (fallbackStreams && fallbackStreams.streams.length > 0) {
 		return fallbackStreams;
+	}
+
+	if (streams.length === 0) {
+		logScraperWarning("EZTV", "no results", {
+			imdbId: parsed.baseId,
+			season: parsed.season,
+			episode: parsed.episode,
+		});
 	}
 
 	return { streams };

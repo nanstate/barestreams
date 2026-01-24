@@ -7,6 +7,7 @@ import { config } from "../config.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { fetchText, normalizeBaseUrl } from "./http.js";
 import { buildQueries, matchesEpisode } from "./query.js";
+import { logScraperWarning } from "./logging.js";
 
 type TorrentGalaxyLink = {
 	name: string;
@@ -277,6 +278,14 @@ export const scrapeTorrentGalaxyStreams = async (
 		.filter((stream): stream is NonNullable<typeof stream> =>
 			Boolean(stream),
 		);
+
+	if (streams.length === 0) {
+		logScraperWarning("TorrentGalaxy", "no results", {
+			baseTitle,
+			query,
+			fallbackQuery,
+		});
+	}
 
 	return { streams };
 };

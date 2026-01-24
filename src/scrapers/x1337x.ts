@@ -7,6 +7,7 @@ import { config } from "../config.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { fetchText, normalizeBaseUrl } from "./http.js";
 import { buildQueries, matchesEpisode } from "./query.js";
+import { logScraperWarning } from "./logging.js";
 
 type X1337xLink = {
 	name: string;
@@ -278,6 +279,14 @@ export const scrapeX1337xStreams = async (
 		.filter((stream): stream is NonNullable<typeof stream> =>
 			Boolean(stream),
 		);
+
+	if (streams.length === 0) {
+		logScraperWarning("1337x", "no results", {
+			baseTitle,
+			query,
+			fallbackQuery,
+		});
+	}
 
 	return { streams };
 };

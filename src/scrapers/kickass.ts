@@ -1,5 +1,6 @@
 import { load } from "cheerio";
-import type { Cheerio, Element } from "cheerio";
+import type { Cheerio } from "cheerio";
+import type { Element } from "domhandler";
 import type { ParsedStremioId } from "../parsing/stremioId.js";
 import { parseMagnet } from "../parsing/magnet.js";
 import { extractQualityHint } from "../streams/quality.js";

@@ -45,6 +45,7 @@ const logFetchWarning = (
 type FetchOptions = {
 	timeoutMs?: number;
 	scraper: ScraperKey;
+	signal: AbortSignal | null;
 	useFlareSolverr?: boolean;
 	useFlareSolverrSessionPool?: boolean;
 };
@@ -67,12 +68,39 @@ type FlareSolverrPoolConfig = {
 export const normalizeBaseUrl = (baseUrl: string): string =>
 	baseUrl.replace(/\/+$/, "");
 
-const fetchResponseWithTimeout = async (
-	url: string,
-	timeoutMs = DEFAULT_TIMEOUT_MS,
-): Promise<Response | null> => {
+const createAbortController = (
+	timeoutMs: number,
+	signal: AbortSignal | null,
+): { controller: AbortController; cleanup: () => void } => {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), timeoutMs);
+	let detach: (() => void) | null = null;
+	if (signal) {
+		const onAbort = () => controller.abort();
+		if (signal.aborted) {
+			controller.abort();
+		} else {
+			signal.addEventListener("abort", onAbort);
+			detach = () => signal.removeEventListener("abort", onAbort);
+		}
+	}
+	return {
+		controller,
+		cleanup: () => {
+			clearTimeout(timeout);
+			if (detach) {
+				detach();
+			}
+		},
+	};
+};
+
+const fetchResponseWithTimeout = async (
+	url: string,
+	timeoutMs: number,
+	signal: AbortSignal | null,
+): Promise<Response | null> => {
+	const { controller, cleanup } = createAbortController(timeoutMs, signal);
 	try {
 		const response = await fetch(url, {
 			headers: { "User-Agent": USER_AGENT },
@@ -82,20 +110,20 @@ const fetchResponseWithTimeout = async (
 	} catch {
 		return null;
 	} finally {
-		clearTimeout(timeout);
+		cleanup();
 	}
 };
 
 const fetchTextViaFlareSolverr = async (
 	url: string,
 	timeoutMs: number,
+	signal: AbortSignal | null,
 	session?: string,
 ): Promise<string | null> => {
 	if (!flareSolverrUrl) {
 		return null;
 	}
-	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), timeoutMs);
+	const { controller, cleanup } = createAbortController(timeoutMs, signal);
 	try {
 		const response = await fetch(`${flareSolverrUrl}/v1`, {
 			method: "POST",
@@ -129,10 +157,15 @@ const fetchTextViaFlareSolverr = async (
 		}
 		return payload.solution.response;
 	} catch (e) {
-		logFetchWarning(url, { error: (e as Error).message, source: "flaresolverr" });
+		if (!signal?.aborted) {
+			logFetchWarning(url, {
+				error: (e as Error).message,
+				source: "flaresolverr",
+			});
+		}
 		return null;
 	} finally {
-		clearTimeout(timeout);
+		cleanup();
 	}
 };
 
@@ -143,8 +176,7 @@ const createFlareSolverrSession = async (
 	if (!flareSolverrUrl) {
 		return null;
 	}
-	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), timeoutMs);
+	const { controller, cleanup } = createAbortController(timeoutMs, null);
 	try {
 		const response = await fetch(`${flareSolverrUrl}/v1`, {
 			method: "POST",
@@ -167,7 +199,7 @@ const createFlareSolverrSession = async (
 	} catch {
 		return null;
 	} finally {
-		clearTimeout(timeout);
+		cleanup();
 	}
 };
 
@@ -178,8 +210,7 @@ const destroyFlareSolverrSession = async (
 	if (!flareSolverrUrl) {
 		return false;
 	}
-	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), timeoutMs);
+	const { controller, cleanup } = createAbortController(timeoutMs, null);
 	try {
 		const response = await fetch(`${flareSolverrUrl}/v1`, {
 			method: "POST",
@@ -199,7 +230,7 @@ const destroyFlareSolverrSession = async (
 	} catch {
 		return false;
 	} finally {
-		clearTimeout(timeout);
+		cleanup();
 	}
 };
 
@@ -287,7 +318,12 @@ const attemptFlareSolverrFallback = async (
 		await enableFlareSolverrForPool(pool, timeoutMs);
 	}
 	const session = resolveFlareSolverrSession(options, pool);
-	const text = await fetchTextViaFlareSolverr(url, timeoutMs, session);
+	const text = await fetchTextViaFlareSolverr(
+		url,
+		timeoutMs,
+		options.signal,
+		session,
+	);
 	if (text) {
 		if (pool) {
 			markFlareSolverrRequired(pool);
@@ -310,6 +346,7 @@ const refreshFlareSolverrPool = async (
 			const warmed = await fetchTextViaFlareSolverr(
 				pool.warmupUrl,
 				options.timeoutMs,
+				null,
 				session,
 			);
 			if (warmed) {
@@ -327,6 +364,7 @@ const refreshFlareSolverrPool = async (
 			await fetchTextViaFlareSolverr(
 				pool.warmupUrl,
 				options.timeoutMs,
+				null,
 				recreated,
 			);
 		}
@@ -344,7 +382,7 @@ const warmupFlareSolverrPool = async (
 	}
 	await Promise.all(
 		pool.sessions.map((session) =>
-			fetchTextViaFlareSolverr(pool.warmupUrl, timeoutMs, session),
+			fetchTextViaFlareSolverr(pool.warmupUrl, timeoutMs, null, session),
 		),
 	);
 };
@@ -450,6 +488,7 @@ const probeScraperFrontPages = async (
 		const response = await fetchResponseWithTimeout(
 			poolConfig.warmupUrl,
 			timeoutMs,
+			null,
 		);
 		if (!response) {
 			return;
@@ -463,12 +502,13 @@ const probeScraperFrontPages = async (
 		}
 		await enableFlareSolverrForPool(pool, timeoutMs);
 		const session = resolveFlareSolverrSession(
-			{ scraper: poolConfig.key },
+			{ scraper: poolConfig.key, signal: null },
 			pool,
 		);
 		const text = await fetchTextViaFlareSolverr(
 			poolConfig.warmupUrl,
 			timeoutMs,
+			null,
 			session,
 		);
 		if (text) {
@@ -509,20 +549,34 @@ const fetchTextWithFallback = async (
 	url: string,
 	options: FetchOptions,
 ): Promise<string | null> => {
+	if (options.signal?.aborted) {
+		return null;
+	}
 	const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 	const pool = getFlareSolverrPool(options.scraper);
 	const useFlareSolverr = shouldUseFlareSolverr(options, pool);
 	if (useFlareSolverr) {
 		const session = resolveFlareSolverrSession(options, pool);
-		const text = await fetchTextViaFlareSolverr(url, timeoutMs, session);
+		const text = await fetchTextViaFlareSolverr(
+			url,
+			timeoutMs,
+			options.signal,
+			session,
+		);
 		if (!text) {
 			return null;
 		}
 		return text;
 	}
-	const response = await fetchResponseWithTimeout(url, timeoutMs);
+	const response = await fetchResponseWithTimeout(
+		url,
+		timeoutMs,
+		options.signal,
+	);
 	if (!response) {
-		logFetchWarning(url, { error: "no-response" });
+		if (!options.signal?.aborted) {
+			logFetchWarning(url, { error: "no-response" });
+		}
 		return null;
 	}
 	if (response.ok) {

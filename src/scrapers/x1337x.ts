@@ -8,6 +8,7 @@ import type { Stream, StreamResponse } from "../types.js";
 import { fetchText, normalizeBaseUrl, ScraperKey } from "./http.js";
 import { buildQueries, matchesEpisode } from "./query.js";
 import { logScraperWarning } from "./logging.js";
+import { shouldAbort, type ScrapeContext } from "./context.js";
 
 type X1337xLink = {
 	name: string;
@@ -21,9 +22,13 @@ type X1337xDetails = {
 	magnetURI?: string;
 };
 
-const fetchHtml = async (url: string): Promise<string | null> => {
+const fetchHtml = async (
+	url: string,
+	context: ScrapeContext,
+): Promise<string | null> => {
 	const html = await fetchText(url, {
 		scraper: ScraperKey.X1337x,
+		signal: context.signal,
 	});
 	return html;
 };
@@ -95,10 +100,11 @@ const searchX1337x = async (
 	baseUrl: string,
 	query: string,
 	limit: number,
+	context: ScrapeContext,
 ): Promise<X1337xLink[]> => {
 	const normalizedBase = normalizeBaseUrl(baseUrl);
 	const url = buildSearchUrl(normalizedBase, query, 1);
-	const html = await fetchHtml(url);
+	const html = await fetchHtml(url, context);
 	if (!html) {
 		return [];
 	}
@@ -107,8 +113,9 @@ const searchX1337x = async (
 
 const fetchTorrentDetails = async (
 	url: string,
+	context: ScrapeContext,
 ): Promise<X1337xDetails | null> => {
-	const html = await fetchHtml(url);
+	const html = await fetchHtml(url, context);
 	if (!html) {
 		return null;
 	}
@@ -188,39 +195,45 @@ const sortBySeedersDesc = (a: X1337xLink, b: X1337xLink): number =>
 
 export const scrapeX1337xStreams = async (
 	parsed: ParsedStremioId,
+	context: ScrapeContext,
 ): Promise<StreamResponse> => {
 	const baseUrls = config.x1337xUrls;
 	const detailLimit = config.flareSolverrSessions;
-	if (baseUrls.length === 0 || detailLimit <= 0) {
+	if (baseUrls.length === 0 || detailLimit <= 0 || shouldAbort(context)) {
 		return { streams: [] };
 	}
 	const { baseTitle, query, fallbackQuery, episodeSuffix } =
 		await buildQueries(parsed);
+	if (shouldAbort(context)) {
+		return { streams: [] };
+	}
 	const searchLimit = Math.max(1, detailLimit);
 	const links: X1337xLink[] = [];
 
 	for (const baseUrl of baseUrls) {
-		if (links.length >= searchLimit) {
+		if (links.length >= searchLimit || shouldAbort(context)) {
 			break;
 		}
 		const batch = await searchX1337x(
 			baseUrl,
 			query,
 			searchLimit - links.length,
+			context,
 		);
 		links.push(...batch);
 	}
 
 	let filteredLinks = links;
-	if (links.length === 0 && fallbackQuery) {
+	if (links.length === 0 && fallbackQuery && !shouldAbort(context)) {
 		for (const baseUrl of baseUrls) {
-			if (filteredLinks.length >= searchLimit) {
+			if (filteredLinks.length >= searchLimit || shouldAbort(context)) {
 				break;
 			}
 			const batch = await searchX1337x(
 				baseUrl,
 				fallbackQuery,
 				searchLimit - filteredLinks.length,
+				context,
 			);
 			filteredLinks.push(...batch);
 		}
@@ -235,8 +248,11 @@ export const scrapeX1337xStreams = async (
 	const uniqueLinks = dedupeLinks(filteredLinks);
 	const sortedLinks = uniqueLinks.slice().sort(sortBySeedersDesc);
 	const topLinks = sortedLinks.slice(0, detailLimit);
+	if (shouldAbort(context)) {
+		return { streams: [] };
+	}
 	const detailResults = await Promise.allSettled(
-		topLinks.map((link) => fetchTorrentDetails(link.url)),
+		topLinks.map((link) => fetchTorrentDetails(link.url, context)),
 	);
 
 	const streams = topLinks
@@ -279,7 +295,7 @@ export const scrapeX1337xStreams = async (
 			Boolean(stream),
 		);
 
-	if (streams.length === 0) {
+	if (streams.length === 0 && !shouldAbort(context)) {
 		logScraperWarning("1337x", "no results", {
 			baseTitle,
 			query,

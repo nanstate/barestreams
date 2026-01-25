@@ -9,6 +9,7 @@ import { fetchText, normalizeBaseUrl, ScraperKey } from "./http.js";
 import { buildQueries, matchesEpisode } from "./query.js";
 import { logScraperWarning } from "./logging.js";
 import { TGX_DETAIL_LIMIT } from "./limits.js";
+import { shouldAbort, type ScrapeContext } from "./context.js";
 
 type TorrentGalaxyLink = {
 	name: string;
@@ -23,8 +24,11 @@ type TorrentGalaxyDetails = {
 	torrentDownload?: string;
 };
 
-const fetchHtml = (url: string): Promise<string | null> =>
-	fetchText(url, { scraper: ScraperKey.Tgx });
+const fetchHtml = (
+	url: string,
+	context: ScrapeContext,
+): Promise<string | null> =>
+	fetchText(url, { scraper: ScraperKey.Tgx, signal: context.signal });
 
 const buildSearchUrl = (
 	baseUrl: string,
@@ -78,13 +82,15 @@ const searchTorrentGalaxy = async (
 	baseUrl: string,
 	query: string,
 	limit: number,
+	context: ScrapeContext,
 ): Promise<TorrentGalaxyLink[]> => {
 	const results: TorrentGalaxyLink[] = [];
 	const normalizedBase = normalizeBaseUrl(baseUrl);
 	let page = 1;
-	while (results.length < limit) {
+	while (results.length < limit && !shouldAbort(context)) {
 		const html = await fetchHtml(
 			buildSearchUrl(normalizedBase, query, page),
+			context,
 		);
 		if (!html) {
 			break;
@@ -105,8 +111,9 @@ const searchTorrentGalaxy = async (
 
 const fetchTorrentDetails = async (
 	url: string,
+	context: ScrapeContext,
 ): Promise<TorrentGalaxyDetails | null> => {
-	const html = await fetchHtml(url);
+	const html = await fetchHtml(url, context);
 	if (!html) {
 		return null;
 	}
@@ -190,36 +197,42 @@ const sortBySeedersDesc = (
 
 export const scrapeTorrentGalaxyStreams = async (
 	parsed: ParsedStremioId,
+	context: ScrapeContext,
 ): Promise<StreamResponse> => {
-	if (config.tgxUrls.length === 0) {
+	if (config.tgxUrls.length === 0 || shouldAbort(context)) {
 		return { streams: [] };
 	}
 	const { baseTitle, query, fallbackQuery, episodeSuffix } =
 		await buildQueries(parsed);
+	if (shouldAbort(context)) {
+		return { streams: [] };
+	}
 	const links: TorrentGalaxyLink[] = [];
 
 	for (const baseUrl of config.tgxUrls) {
-		if (links.length >= TGX_DETAIL_LIMIT) {
+		if (links.length >= TGX_DETAIL_LIMIT || shouldAbort(context)) {
 			break;
 		}
 		const batch = await searchTorrentGalaxy(
 			baseUrl,
 			query,
 			TGX_DETAIL_LIMIT - links.length,
+			context,
 		);
 		links.push(...batch);
 	}
 
 	let filteredLinks = links;
-	if (links.length === 0 && fallbackQuery) {
+	if (links.length === 0 && fallbackQuery && !shouldAbort(context)) {
 		for (const baseUrl of config.tgxUrls) {
-			if (filteredLinks.length >= TGX_DETAIL_LIMIT) {
+			if (filteredLinks.length >= TGX_DETAIL_LIMIT || shouldAbort(context)) {
 				break;
 			}
 			const batch = await searchTorrentGalaxy(
 				baseUrl,
 				fallbackQuery,
 				TGX_DETAIL_LIMIT - filteredLinks.length,
+				context,
 			);
 			filteredLinks.push(...batch);
 		}
@@ -233,8 +246,11 @@ export const scrapeTorrentGalaxyStreams = async (
 
 	const uniqueLinks = dedupeLinks(filteredLinks);
 	const sortedLinks = uniqueLinks.slice().sort(sortBySeedersDesc);
+	if (shouldAbort(context)) {
+		return { streams: [] };
+	}
 	const detailResults = await Promise.allSettled(
-		sortedLinks.map((link) => fetchTorrentDetails(link.url)),
+		sortedLinks.map((link) => fetchTorrentDetails(link.url, context)),
 	);
 
 	const streams = sortedLinks
@@ -281,7 +297,7 @@ export const scrapeTorrentGalaxyStreams = async (
 			Boolean(stream),
 		);
 
-	if (streams.length === 0) {
+	if (streams.length === 0 && !shouldAbort(context)) {
 		logScraperWarning("TorrentGalaxy", "no results", {
 			baseTitle,
 			query,

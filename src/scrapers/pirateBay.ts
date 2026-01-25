@@ -7,6 +7,7 @@ import type { Stream, StreamResponse } from "../types.js";
 import { fetchJson, normalizeBaseUrl, ScraperKey } from "./http.js";
 import { logScraperWarning } from "./logging.js";
 import { buildQueries, matchesEpisode } from "./query.js";
+import { shouldAbort, type ScrapeContext } from "./context.js";
 
 type PirateBayResult = {
 	title?: string;
@@ -128,16 +129,23 @@ const dedupeResults = (results: PirateBayResult[]): PirateBayResult[] => {
 export const scrapePirateBayStreams = async (
 	parsed: ParsedStremioId,
 	type: "movie" | "series",
+	context: ScrapeContext,
 ): Promise<StreamResponse> => {
-	if (config.apiBayUrls.length === 0) {
+	if (config.apiBayUrls.length === 0 || shouldAbort(context)) {
 		return { streams: [] };
 	}
 	const { baseTitle, query, fallbackQuery, episodeSuffix } =
 		await buildQueries(parsed);
+	if (shouldAbort(context)) {
+		return { streams: [] };
+	}
 	const categories = type === "movie" ? MOVIE_CATEGORIES : SERIES_CATEGORIES;
 	const fetchResultsForQuery = async (
 		searchQuery: string,
 	): Promise<PirateBayResult[]> => {
+		if (shouldAbort(context)) {
+			return [];
+		}
 		const tasks = config.apiBayUrls.flatMap((baseUrl) =>
 			categories.map((category) => ({
 				baseUrl,
@@ -152,7 +160,7 @@ export const scrapePirateBayStreams = async (
 				}
 				return fetchJson<PirateBayApiResult[]>(
 					buildSearchUrl(apiBase, searchQuery, category),
-					{ scraper: ScraperKey.Tpb },
+					{ scraper: ScraperKey.Tpb, signal: context.signal },
 				);
 			}),
 		);
@@ -177,7 +185,7 @@ export const scrapePirateBayStreams = async (
 	const results = await fetchResultsForQuery(query);
 
 	let filtered = results;
-	if (results.length === 0 && fallbackQuery) {
+	if (results.length === 0 && fallbackQuery && !shouldAbort(context)) {
 		filtered = await fetchResultsForQuery(fallbackQuery);
 	}
 
@@ -223,7 +231,7 @@ export const scrapePirateBayStreams = async (
 			Boolean(stream),
 		);
 
-	if (streams.length === 0) {
+	if (streams.length === 0 && !shouldAbort(context)) {
 		logScraperWarning("PirateBay", "no results", {
 			type,
 			baseTitle,

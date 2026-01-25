@@ -9,6 +9,7 @@ import { fetchJson, fetchText, normalizeBaseUrl, ScraperKey } from "./http.js";
 import { logScraperWarning } from "./logging.js";
 import { EZTV_PAGE_CONCURRENCY, EZTV_SEARCH_LINK_LIMIT } from "./limits.js";
 import { formatEpisodeSuffix, parseEpisodeFromText } from "./query.js";
+import { shouldAbort, type ScrapeContext } from "./context.js";
 
 type EztvTorrent = {
 	title?: string;
@@ -32,8 +33,11 @@ type EztvTorrentRaw = Omit<EztvTorrent, "size_bytes"> & {
 	size_bytes?: number | string;
 };
 
-const fetchHtml = (url: string): Promise<string | null> =>
-	fetchText(url, { scraper: ScraperKey.Eztv });
+const fetchHtml = (
+	url: string,
+	context: ScrapeContext,
+): Promise<string | null> =>
+	fetchText(url, { scraper: ScraperKey.Eztv, signal: context.signal });
 
 const getImdbDigits = (baseId: string): string => baseId.replace(/^tt/, "");
 const DEFAULT_LIMIT = 30;
@@ -68,11 +72,16 @@ const buildApiUrl = (baseUrl: string, imdbId: string, page: number): string => {
 const fetchAllTorrents = async (
 	baseUrl: string,
 	imdbId: string,
+	context: ScrapeContext,
 ): Promise<EztvTorrent[]> => {
 	const torrents: EztvTorrent[] = [];
+	if (shouldAbort(context)) {
+		return torrents;
+	}
 	const firstUrl = buildApiUrl(baseUrl, imdbId, 1);
 	const firstResponse = await fetchJson<EztvResponse>(firstUrl, {
 		scraper: ScraperKey.Eztv,
+		signal: context.signal,
 	});
 	if (!firstResponse) {
 		return torrents;
@@ -80,6 +89,9 @@ const fetchAllTorrents = async (
 
 	const firstBatch = (firstResponse.torrents ?? []).map(normalizeTorrent);
 	torrents.push(...firstBatch);
+	if (shouldAbort(context)) {
+		return torrents;
+	}
 
 	let expectedTotal =
 		typeof firstResponse.torrents_count === "number"
@@ -109,12 +121,16 @@ const fetchAllTorrents = async (
 	const concurrency = EZTV_PAGE_CONCURRENCY;
 
 	for (let i = 0; i < pageNumbers.length; i += concurrency) {
+		if (shouldAbort(context)) {
+			break;
+		}
 		const batchPages = pageNumbers.slice(i, i + concurrency);
 		const responses = await Promise.all(
 			batchPages.map(async (page) => {
 				const url = buildApiUrl(baseUrl, imdbId, page);
 				return fetchJson<EztvResponse>(url, {
 					scraper: ScraperKey.Eztv,
+					signal: context.signal,
 				});
 			}),
 		);
@@ -282,9 +298,13 @@ const scrapeSearchStreams = async (
 	query: string,
 	titleCandidates: string[],
 	displayContext: { imdbTitle: string; season?: number; episode?: number },
+	context: ScrapeContext,
 ): Promise<StreamResponse> => {
+	if (shouldAbort(context)) {
+		return { streams: [] };
+	}
 	const searchUrl = buildSearchUrl(baseUrl, query);
-	const html = await fetchHtml(searchUrl);
+	const html = await fetchHtml(searchUrl, context);
 	if (!html) {
 		return { streams: [] };
 	}
@@ -295,13 +315,18 @@ const scrapeSearchStreams = async (
 		EZTV_SEARCH_LINK_LIMIT,
 	);
 	if (episodeLinks.length === 0) {
-		logScraperWarning("EZTV", "no results", { baseUrl, query });
+		if (!shouldAbort(context)) {
+			logScraperWarning("EZTV", "no results", { baseUrl, query });
+		}
 		return { streams: [] };
 	}
 
 	const results = await Promise.all(
 		episodeLinks.map(async (link) => {
-			const pageHtml = await fetchHtml(link);
+			if (shouldAbort(context)) {
+				return null;
+			}
+			const pageHtml = await fetchHtml(link, context);
 			if (!pageHtml) {
 				return null;
 			}
@@ -387,12 +412,16 @@ const sortBySeedsDesc = (a: EztvTorrent, b: EztvTorrent): number => {
 
 export const scrapeEztvStreams = async (
 	parsed: ParsedStremioId,
+	context: ScrapeContext,
 ): Promise<StreamResponse> => {
-	if (config.eztvUrls.length === 0) {
+	if (config.eztvUrls.length === 0 || shouldAbort(context)) {
 		return { streams: [] };
 	}
 	const imdbDigits = getImdbDigits(parsed.baseId);
 	const basics = await getTitleBasics(parsed.baseId);
+	if (shouldAbort(context)) {
+		return { streams: [] };
+	}
 	const titleCandidates = [basics?.primaryTitle, basics?.originalTitle]
 		.filter((title): title is string => Boolean(title))
 		.map((title) => normalizeTitle(title))
@@ -400,11 +429,11 @@ export const scrapeEztvStreams = async (
 
 	const responses = await Promise.allSettled(
 		config.eztvUrls.map(async (baseUrl) => {
-			const primary = await fetchAllTorrents(baseUrl, imdbDigits);
-			if (primary.length > 0) {
+			const primary = await fetchAllTorrents(baseUrl, imdbDigits, context);
+			if (primary.length > 0 || shouldAbort(context)) {
 				return primary;
 			}
-			return fetchAllTorrents(baseUrl, "0");
+			return fetchAllTorrents(baseUrl, "0", context);
 		}),
 	);
 
@@ -472,7 +501,8 @@ export const scrapeEztvStreams = async (
 		streams.length === 0 &&
 		parsed.season &&
 		parsed.episode &&
-		titleCandidates.length > 0
+		titleCandidates.length > 0 &&
+		!shouldAbort(context)
 	) {
 		const episodeSuffix = formatEpisodeSuffix(
 			parsed.season,
@@ -485,11 +515,17 @@ export const scrapeEztvStreams = async (
 				basics?.primaryTitle || basics?.originalTitle || baseTitle;
 			const fallbackResults = await Promise.allSettled(
 				config.eztvUrls.map((baseUrl) =>
-					scrapeSearchStreams(baseUrl, query, titleCandidates, {
-						imdbTitle,
-						season: parsed.season,
-						episode: parsed.episode,
-					}),
+					scrapeSearchStreams(
+						baseUrl,
+						query,
+						titleCandidates,
+						{
+							imdbTitle,
+							season: parsed.season,
+							episode: parsed.episode,
+						},
+						context,
+					),
 				),
 			);
 			const fallbackList = fallbackResults.flatMap((result) =>
@@ -512,7 +548,7 @@ export const scrapeEztvStreams = async (
 		return fallbackStreams;
 	}
 
-	if (streams.length === 0) {
+	if (streams.length === 0 && !shouldAbort(context)) {
 		logScraperWarning("EZTV", "no results", {
 			imdbId: parsed.baseId,
 			season: parsed.season,

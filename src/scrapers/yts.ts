@@ -4,6 +4,7 @@ import { config } from "../config.js";
 import { fetchJson, normalizeBaseUrl, ScraperKey } from "./http.js";
 import type { Stream, StreamResponse } from "../types.js";
 import { logScraperWarning } from "./logging.js";
+import { shouldAbort, type ScrapeContext } from "./context.js";
 
 type YtsTorrent = {
 	hash: string;
@@ -54,8 +55,9 @@ const buildBehaviorHints = (
 
 export const scrapeYtsStreams = async (
 	parsed: ParsedStremioId,
+	context: ScrapeContext,
 ): Promise<StreamResponse> => {
-	if (config.ytsUrls.length === 0) {
+	if (config.ytsUrls.length === 0 || shouldAbort(context)) {
 		return { streams: [] };
 	}
 	const imdbId = parsed.baseId;
@@ -63,6 +65,7 @@ export const scrapeYtsStreams = async (
 		config.ytsUrls.map((baseUrl) =>
 			fetchJson<YtsResponse>(buildListUrl(baseUrl, imdbId), {
 				scraper: ScraperKey.Yts,
+				signal: context.signal,
 			}),
 		),
 	);
@@ -119,7 +122,7 @@ export const scrapeYtsStreams = async (
 			Boolean(stream),
 		);
 
-	if (streams.length === 0) {
+	if (streams.length === 0 && !shouldAbort(context)) {
 		logScraperWarning("YTS", "no results", { imdbId });
 	}
 

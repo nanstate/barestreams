@@ -36,6 +36,7 @@ docker compose -f docker-compose.test.yml up --abort-on-container-exit --build
 
 - `REDIS_URL`: Redis connection URL (optional).
 - `REDIS_TTL_HOURS`: Redis cache TTL in hours (optional).
+- `MAX_REQUEST_WAIT_SECONDS`: Maximum time in seconds to wait for scraper results before returning partial results (optional).
 - `EZTV_URL`: Comma-separated list of EZTV base URLs to try in order.
 - `YTS_URL`: Comma-separated list of YTS base URLs to try in order.
 - `TGX_URL`: Comma-separated list of TorrentGalaxy base URLs to try in order.

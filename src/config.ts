@@ -9,6 +9,7 @@ export type AppConfig = {
 	flareSolverrSessions: number;
 	flareSolverrSessionRefreshMs: number;
 	flareSolverrUrl: string | null;
+	maxRequestWaitSeconds: number | null;
 };
 
 const parseUrls = (raw: string): string[] =>
@@ -16,6 +17,11 @@ const parseUrls = (raw: string): string[] =>
 		.split(",")
 		.map((entry) => entry.trim())
 		.filter(Boolean);
+
+const parsePositiveInt = (raw: string): number | null => {
+	const parsed = Number.parseInt(raw, 10);
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
 
 export const loadConfig = (): AppConfig => {
 	const eztvRaw = process.env.EZTV_URL || "";
@@ -34,16 +40,11 @@ export const loadConfig = (): AppConfig => {
 	const x1337xUrls = parseUrls(x1337xRaw);
 
 	const flareSolverrRaw = process.env.FLARESOLVERR_SESSIONS || "10";
-	const flareSolverrSessions = Math.max(
-		1,
-		Number.parseInt(flareSolverrRaw, 10) || 10,
-	);
+	const flareSolverrSessions = parsePositiveInt(flareSolverrRaw) ?? 10;
 	const flareSolverrRefreshRaw =
 		process.env.FLARESOLVERR_SESSION_REFRESH_MS || "3600000";
-	const flareSolverrSessionRefreshMs = Math.max(
-		0,
-		Number.parseInt(flareSolverrRefreshRaw, 10) || 0,
-	);
+	const flareSolverrSessionRefreshMs =
+		parsePositiveInt(flareSolverrRefreshRaw) ?? 0;
 
 	const flareSolverrUrlRaw = process.env.FLARESOLVERR_URL?.trim() ?? "";
 	const flareSolverrUrl = flareSolverrUrlRaw ? flareSolverrUrlRaw : null;
@@ -52,11 +53,11 @@ export const loadConfig = (): AppConfig => {
 	const redisUrl = redisUrlRaw ? redisUrlRaw : null;
 
 	const redisTtlRaw = process.env.REDIS_TTL_HOURS?.trim() ?? "";
-	const redisTtlParsed = Number.parseInt(redisTtlRaw, 10);
-	const redisTtlHours =
-		Number.isFinite(redisTtlParsed) && redisTtlParsed > 0
-			? redisTtlParsed
-			: null;
+	const redisTtlHours = parsePositiveInt(redisTtlRaw);
+
+	const maxRequestWaitRaw =
+		process.env.MAX_REQUEST_WAIT_SECONDS?.trim() ?? "";
+	const maxRequestWaitSeconds = parsePositiveInt(maxRequestWaitRaw);
 
 	return {
 		redisUrl,
@@ -69,6 +70,7 @@ export const loadConfig = (): AppConfig => {
 		flareSolverrSessions,
 		flareSolverrSessionRefreshMs,
 		flareSolverrUrl,
+		maxRequestWaitSeconds,
 	};
 };
 

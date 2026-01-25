@@ -1,8 +1,11 @@
 import type { StreamHandlerArgs } from "stremio-addon-sdk";
 import { addonBuilder } from "stremio-addon-sdk";
+import { setMaxListeners } from "node:events";
 import { getCache, setCache } from "./cache/redis.js";
+import { config } from "./config.js";
 import { getTitleBasics } from "./imdb/index.js";
 import { parseStremioId, type ParsedStremioId } from "./parsing/stremioId.js";
+import type { ScrapeContext } from "./scrapers/context.js";
 import { scrapeEztvStreams } from "./scrapers/eztv.js";
 import { scrapePirateBayStreams } from "./scrapers/pirateBay.js";
 import { scrapeTorrentGalaxyStreams } from "./scrapers/torrentGalaxy.js";
@@ -158,6 +161,25 @@ const logStreamRequest = (params: {
 	console.info(`[stream] ${JSON.stringify(payload)}`);
 };
 
+const createScrapeContext = (
+	timeoutSeconds: number | null,
+): { context: ScrapeContext; clear: () => void } => {
+	if (!timeoutSeconds || timeoutSeconds <= 0) {
+		return {
+			context: { signal: null },
+			clear: () => {},
+		};
+	}
+	const timeoutMs = Math.ceil(timeoutSeconds * 1000);
+	const controller = new AbortController();
+	setMaxListeners(0, controller.signal);
+	const timeout = setTimeout(() => controller.abort(), timeoutMs);
+	return {
+		context: { signal: controller.signal },
+		clear: () => clearTimeout(timeout),
+	};
+};
+
 export const createAddonInterface = () => {
 	const builder = new addonBuilder(manifest);
 
@@ -188,21 +210,28 @@ export const createAddonInterface = () => {
 			return response;
 		}
 
-		const responses = await Promise.allSettled(
-			type === "movie"
-				? [
-						scrapeYtsStreams(parsed),
-						scrapeTorrentGalaxyStreams(parsed),
-						scrapePirateBayStreams(parsed, "movie"),
-						scrapeX1337xStreams(parsed),
-					]
-				: [
-						scrapeEztvStreams(parsed),
-						scrapeTorrentGalaxyStreams(parsed),
-						scrapePirateBayStreams(parsed, "series"),
-						scrapeX1337xStreams(parsed),
-					],
-		);
+		const { context: scrapeContext, clear: clearScrapeTimeout } =
+			createScrapeContext(config.maxRequestWaitSeconds);
+		let responses: PromiseSettledResult<StreamResponse>[] = [];
+		try {
+			responses = await Promise.allSettled(
+				type === "movie"
+					? [
+							scrapeYtsStreams(parsed, scrapeContext),
+							scrapeTorrentGalaxyStreams(parsed, scrapeContext),
+							scrapePirateBayStreams(parsed, "movie", scrapeContext),
+							scrapeX1337xStreams(parsed, scrapeContext),
+						]
+					: [
+							scrapeEztvStreams(parsed, scrapeContext),
+							scrapeTorrentGalaxyStreams(parsed, scrapeContext),
+							scrapePirateBayStreams(parsed, "series", scrapeContext),
+							scrapeX1337xStreams(parsed, scrapeContext),
+						],
+			);
+		} finally {
+			clearScrapeTimeout();
+		}
 
 		const seen = new Map<string, Stream>();
 		const streams = responses.flatMap((result) => {

@@ -241,7 +241,9 @@ export const createAddonInterface = () => {
 				stripStreamExtras(applyBingeGroup(stream, parsed, type)),
 			),
 		};
-		await setCache(key, JSON.stringify(response));
+		if (response.streams.length > 0) {
+			await setCache(key, JSON.stringify(response));
+		}
 		const durationMs =
 			Number(process.hrtime.bigint() - startedAt) / 1_000_000;
 		logStreamRequest({

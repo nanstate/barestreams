@@ -399,9 +399,12 @@ export const scrapeEztvStreams = async (
 		.filter((title, index, all) => all.indexOf(title) === index);
 
 	const responses = await Promise.allSettled(
-		config.eztvUrls.flatMap((baseUrl) => {
-			const imdbIds = [imdbDigits, `tt${imdbDigits}`];
-			return imdbIds.map((imdbId) => fetchAllTorrents(baseUrl, imdbId));
+		config.eztvUrls.map(async (baseUrl) => {
+			const primary = await fetchAllTorrents(baseUrl, imdbDigits);
+			if (primary.length > 0) {
+				return primary;
+			}
+			return fetchAllTorrents(baseUrl, "0");
 		}),
 	);
 

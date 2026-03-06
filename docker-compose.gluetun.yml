@@ -11,6 +11,7 @@ services:
       - OPENVPN_USER=${NORDVPN_USER}
       - OPENVPN_PASSWORD=${NORDVPN_PASS}
       - SERVER_COUNTRIES=${NORDVPN_SERVER_COUNTRIES}
+      - UPDATER_PERIOD=24h
       - TZ=${TZ}
     ports:
       - "19080:80"

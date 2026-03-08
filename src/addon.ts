@@ -13,6 +13,7 @@ import { scrapeTorrentGalaxyStreams } from "./scrapers/torrentGalaxy.js";
 import { scrapeX1337xStreams } from "./scrapers/x1337x.js";
 import { scrapeYtsStreams } from "./scrapers/yts.js";
 import { extractQualityHint } from "./streams/quality.js";
+import { appendTrackersToStream } from "./trackers/index.js";
 import { BadRequestError, type Stream, type StreamResponse } from "./types.js";
 
 export const manifest = {
@@ -271,7 +272,9 @@ export const createAddonInterface = () => {
 		const sortedStreams = filteredStreams.slice().sort(sortBySeedersDesc);
 		const response: StreamResponse = {
 			streams: sortedStreams.map((stream) =>
-				stripStreamExtras(applyBingeGroup(stream, parsed, type)),
+				stripStreamExtras(
+					appendTrackersToStream(applyBingeGroup(stream, parsed, type)),
+				),
 			),
 		};
 		if (response.streams.length > 0) {

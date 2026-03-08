@@ -1,4 +1,4 @@
-type MagnetInfo = {
+export type MagnetInfo = {
 	infoHash: string;
 	sources: string[];
 };
@@ -76,4 +76,34 @@ export const parseMagnet = (magnetUri: string): MagnetInfo | null => {
 	);
 
 	return { infoHash, sources };
+};
+
+export const extractTrackersFromSources = (sources: string[]): string[] =>
+	sources
+		.filter((source) => source.startsWith("tracker:"))
+		.map((source) => source.slice("tracker:".length))
+		.filter(Boolean);
+
+export const appendTrackersToMagnetUri = (
+	magnetUri: string,
+	trackers: string[],
+): string | null => {
+	let url: URL;
+	try {
+		url = new URL(magnetUri);
+	} catch {
+		return null;
+	}
+	if (url.protocol !== "magnet:") {
+		return null;
+	}
+	const existing = new Set(url.searchParams.getAll("tr").filter(Boolean));
+	for (const tracker of trackers) {
+		if (existing.has(tracker)) {
+			continue;
+		}
+		existing.add(tracker);
+		url.searchParams.append("tr", tracker);
+	}
+	return url.toString();
 };

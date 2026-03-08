@@ -6,6 +6,7 @@ import { enableHttp2IfAvailable } from "./httpClient.js";
 import { ensureImdbDatasets } from "./imdb/index.js";
 import "./scrapers/registerFlareSolverrPools.js";
 import { initFlareSolverrSessions } from "./scrapers/http.js";
+import { ensureTrackers } from "./trackers/index.js";
 import { BadRequestError } from "./types.js";
 
 const PORT = 80;
@@ -39,6 +40,7 @@ const start = async (): Promise<void> => {
 		await initFlareSolverrSessions();
 	}
 	await ensureImdbDatasets();
+	await ensureTrackers();
 	const addonInterface = createAddonInterface();
 
 	const server = http.createServer(async (req, res) => {

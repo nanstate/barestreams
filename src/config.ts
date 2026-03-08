@@ -11,6 +11,8 @@ export type AppConfig = {
 	flareSolverrSessionRefreshMs: number;
 	flareSolverrUrl: string | null;
 	maxRequestWaitSeconds: number | null;
+	useTrackerslist: boolean;
+	customTrackerSource: string | null;
 };
 
 const parseUrls = (raw: string): string[] =>
@@ -22,6 +24,17 @@ const parseUrls = (raw: string): string[] =>
 const parsePositiveInt = (raw: string): number | null => {
 	const parsed = Number.parseInt(raw, 10);
 	return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+const parseBoolean = (raw: string): boolean | null => {
+	const normalized = raw.trim().toLowerCase();
+	if (normalized === "true") {
+		return true;
+	}
+	if (normalized === "false") {
+		return false;
+	}
+	return null;
 };
 
 export const loadConfig = (): AppConfig => {
@@ -63,6 +76,12 @@ export const loadConfig = (): AppConfig => {
 		process.env.MAX_REQUEST_WAIT_SECONDS?.trim() ?? "";
 	const maxRequestWaitSeconds = parsePositiveInt(maxRequestWaitRaw);
 
+	const useTrackerslistRaw = process.env.USE_TRACKERSLIST?.trim() ?? "";
+	const useTrackerslist = parseBoolean(useTrackerslistRaw) ?? true;
+
+	const customTrackerSourceRaw = process.env.CUSTOM_TRACKERS?.trim() ?? "";
+	const customTrackerSource = customTrackerSourceRaw || null;
+
 	return {
 		redisUrl,
 		redisTtlHours,
@@ -76,6 +95,8 @@ export const loadConfig = (): AppConfig => {
 		flareSolverrSessionRefreshMs,
 		flareSolverrUrl,
 		maxRequestWaitSeconds,
+		useTrackerslist,
+		customTrackerSource,
 	};
 };
 

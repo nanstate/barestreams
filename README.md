@@ -46,6 +46,8 @@ docker compose -f docker-compose.test.yml up --abort-on-container-exit --build
 - `FLARESOLVERR_URL`: FlareSolverr base URL (optional).
 - `FLARESOLVERR_SESSIONS`: Maximum FlareSolverr sessions per scraper (optional).
 - `FLARESOLVERR_SESSION_REFRESH_MS`: FlareSolverr session refresh interval in ms (optional).
+- `USE_TRACKERSLIST`: Append the built-in trackerslist tracker set to torrent responses. Defaults to `true`.
+- `CUSTOM_TRACKERS`: Additional trackers to append to torrent responses. Accepts either a comma-separated list of tracker URLs or a path to a local file containing one tracker URL per line.
 
 ## Supported scrapers
 
@@ -82,3 +84,7 @@ After this, your addon manifest should be available at:
 ## IMDb datasets
 
 On startup the addon downloads and extracts the IMDb TSV datasets into `data/imdb`. If the files are older than 24 hours they are refreshed in the background.
+
+## Trackerslist
+
+When `USE_TRACKERSLIST` is enabled, the addon downloads `trackers_best.txt` from [trackerslist](https://github.com/ngosang/trackerslist). The list is refreshed every 24 hours.
